@@ -1,0 +1,414 @@
+### Variables
+@baseUrl = http://localhost:3000
+@accessToken = 
+@refreshToken = 
+@resetToken = 
+
+### Register new user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "jkkimunyi@gmail.com",
+  "password": "@_Kimunyi123!",
+  "firstName": "Jimmy",
+  "lastName": "Kimunyi",
+  "phone": "+254113514156",
+  "dateOfBirth": "2003-08-04"
+}
+
+### Register with missing fields (should fail)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test2@example.com",
+  "password": "weak"
+}
+
+### Register with existing email (should fail)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456",
+  "firstName": "Jane",
+  "lastName": "Smith"
+}
+
+### Login with valid credentials
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456"
+}
+
+### Login with remember me
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456",
+  "rememberMe": true
+}
+
+### Login with invalid credentials (should fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "wrongpassword"
+}
+
+### Login with non-existent user (should fail)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com",
+  "password": "Test123456"
+}
+
+### Test rate limiting (run this multiple times quickly)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "wrongpassword"
+}
+
+### Get user profile (requires authentication)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{accessToken}}
+
+### Get profile without token (should fail)
+GET {{baseUrl}}/auth/profile
+
+### Refresh tokens
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Refresh with invalid token (should fail)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "invalid-token"
+}
+
+### Forgot password
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+}
+
+### Forgot password with non-existent email
+POST {{baseUrl}}/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "nonexistent@example.com"
+}
+
+### Reset password
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "token": "{{resetToken}}",
+  "newPassword": "NewPassword123"
+}
+
+### Reset password with invalid token (should fail)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "token": "invalid-token",
+  "newPassword": "NewPassword123"
+}
+
+### Reset password with weak password (should fail)
+POST {{baseUrl}}/auth/reset-password
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "token": "{{resetToken}}",
+  "newPassword": "weak"
+}
+
+### Verify email
+GET {{baseUrl}}/auth/verify-email?token=verification-token
+
+### Verify email with invalid token (should fail)
+GET {{baseUrl}}/auth/verify-email?token=invalid-token
+
+### Logout (single session)
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Logout all sessions
+POST {{baseUrl}}/auth/logout-all
+Authorization: Bearer {{accessToken}}
+
+### Test protected route after logout (should fail)
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer {{accessToken}}
+
+### Register admin user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin123456",
+  "firstName": "Admin",
+  "lastName": "User"
+}
+
+### Register agent user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "agent@example.com",
+  "password": "Agent123456",
+  "firstName": "Agent",
+  "lastName": "User"
+}
+
+### Test password validation - no uppercase
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test3@example.com",
+  "password": "lowercase123",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test password validation - no lowercase
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test4@example.com",
+  "password": "UPPERCASE123",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test password validation - no numbers
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test5@example.com",
+  "password": "NoNumbers",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test password validation - too short
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test6@example.com",
+  "password": "Short1",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test email validation - invalid format
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "invalid-email",
+  "password": "Valid123456",
+  "firstName": "Test",
+  "lastName": "User"
+}
+
+### Test name validation - too short
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test7@example.com",
+  "password": "Valid123456",
+  "firstName": "A",
+  "lastName": "B"
+}
+
+### Test phone validation - invalid format
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test8@example.com",
+  "password": "Valid123456",
+  "firstName": "Test",
+  "lastName": "User",
+  "phone": "invalid-phone"
+}
+
+### Test date validation - invalid format
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test9@example.com",
+  "password": "Valid123456",
+  "firstName": "Test",
+  "lastName": "User",
+  "dateOfBirth": "invalid-date"
+}
+
+### Test concurrent login attempts (rate limiting)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "ratelimit@example.com",
+  "password": "wrongpassword"
+}
+
+### Test token expiration scenario
+# First login to get tokens
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456"
+}
+
+# Wait for token to expire, then try to access protected route
+# This should fail with 401
+GET {{baseUrl}}/auth/profile
+Authorization: Bearer expired-token
+
+### Test refresh token rotation
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+# Try to use the same refresh token again (should fail)
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Test SQL injection attempts
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com'; DROP TABLE users; --",
+  "password": "Test123456"
+}
+
+### Test XSS attempts
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "xss@example.com",
+  "password": "Test123456",
+  "firstName": "<script>alert('xss')</script>",
+  "lastName": "User"
+}
+
+### Test large payload
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "large@example.com",
+  "password": "Test123456",
+  "firstName": "Test",
+  "lastName": "User",
+  "phone": "+1234567890",
+  "address": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+}
+
+### Test case sensitivity
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "TEST@EXAMPLE.COM",
+  "password": "Test123456"
+}
+
+### Test password with special characters
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "special@example.com",
+  "password": "Test123!@#$%^&*()",
+  "firstName": "Special",
+  "lastName": "User"
+}
+
+### Test empty request body
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{}
+
+### Test malformed JSON
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com"
+  "password": "Test123456"
+}
+
+### Test content type handling
+POST {{baseUrl}}/auth/login
+Content-Type: text/plain
+
+email=test@example.com&password=Test123456
+
+### Test OPTIONS request (CORS preflight)
+OPTIONS {{baseUrl}}/auth/login
+
+### Test unsupported HTTP method
+PATCH {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123456"
+}

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthController } from './auth/auth.controller';
@@ -18,10 +20,38 @@ import { UploadService } from './upload/upload.service';
 import { UploadModule } from './upload/upload.module';
 import { EmailService } from './email/email.service';
 import { EmailModule } from './email/email.module';
+import { VehiclesModule } from './vehicles/vehicles.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import configuration from './config/configuration';
 
 @Module({
-  imports: [AuthModule, UsersModule, PaymentsModule, AdminModule, PrismaModule, UploadModule, EmailModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+    }),
+    AuthModule,
+    UsersModule,
+    PaymentsModule,
+    AdminModule,
+    PrismaModule,
+    UploadModule,
+    EmailModule,
+    VehiclesModule,
+  ],
   controllers: [AppController, AuthController, UsersController, PaymentsController, AdminController],
-  providers: [AppService, UsersService, PaymentsService, AdminService, PrismaService, UploadService, EmailService],
+  providers: [
+    AppService,
+    UsersService,
+    PaymentsService,
+    AdminService,
+    PrismaService,
+    UploadService,
+    EmailService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

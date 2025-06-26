@@ -1,15 +1,258 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AGENT
+  CUSTOMER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  RENTED
+  MAINTENANCE
+  INACTIVE
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+  CVT
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum VehicleCategory {
+  ECONOMY
+  COMPACT
+  SEDAN
+  SUV
+  LUXURY
+  VAN
+  TRUCK
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  phone         String?  @unique
+  password      String
+  firstName     String
+  lastName      String
+  dateOfBirth   DateTime?
+  licenseNumber String?
+  role          Role     @default(CUSTOMER)
+  isActive      Boolean  @default(true)
+  isVerified    Boolean  @default(false)
+  avatar        String?
+  address       String?
+  city          String?
+  country       String?
+  zipCode       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  bookings      Booking[]
+  reviews       Review[]
+  paymentMethods PaymentMethod[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Vehicle {
+  id            String          @id @default(cuid())
+  make          String
+  model         String
+  year          Int
+  category      VehicleCategory
+  transmission  TransmissionType
+  fuelType      FuelType
+  seats         Int
+  doors         Int
+  color         String
+  licensePlate  String          @unique
+  vin           String?         @unique
+  mileage       Float           @default(0)
+  status        VehicleStatus   @default(AVAILABLE)
+  pricePerDay   Float
+  pricePerHour  Float?
+  description   String?
+  location      String
+  features      String[] // JSON array of features
+  images        String[] // Array of image URLs
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  // Relations
+  bookings      Booking[]
+  reviews       Review[]
+
+  @@map("vehicles")
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  vehicleId     String
+  startDate     DateTime
+  endDate       DateTime
+  startTime     String?
+  endTime       String?
+  pickupLocation String
+  dropoffLocation String?
+  totalDays     Int
+  totalHours    Int?
+  pricePerDay   Float
+  pricePerHour  Float?
+  subtotal      Float
+  taxes         Float         @default(0)
+  fees          Float         @default(0)
+  discount      Float         @default(0)
+  totalAmount   Float
+  status        BookingStatus @default(PENDING)
+  notes         String?
+  cancellationReason String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  user          User          @relation(fields: [userId], references: [id])
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id])
+  payment       Payment?
+  coupon        Coupon?       @relation(fields: [couponId], references: [id])
+  couponId      String?
+
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  amount          Float
+  currency        String        @default("USD")
+  paymentMethod   String        // stripe, paypal, etc.
+  transactionId   String?
+  status          PaymentStatus @default(PENDING)
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  refundAmount    Float?
+  stripePaymentIntentId String?
+  receiptUrl      String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+
+  @@map("payments")
+}
+
+model PaymentMethod {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // card, bank_account
+  last4       String
+  brand       String?  // visa, mastercard, etc.
+  expiryMonth Int?
+  expiryYear  Int?
+  isDefault   Boolean  @default(false)
+  stripePaymentMethodId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@map("payment_methods")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  vehicleId String
+  rating    Int      // 1-5
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id])
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@unique([userId, vehicleId])
+  @@map("reviews")
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  description   String?
+  discountType  String    // percentage, fixed
+  discountValue Float
+  minAmount     Float?    // minimum booking amount
+  maxDiscount   Float?    // maximum discount amount
+  usageLimit    Int?      // max number of uses
+  usedCount     Int       @default(0)
+  isActive      Boolean   @default(true)
+  validFrom     DateTime
+  validUntil    DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  bookings      Booking[]
+
+  @@map("coupons")
+}
+
+model SystemSettings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_settings")
 }
