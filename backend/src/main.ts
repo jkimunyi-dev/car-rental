@@ -2,22 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import * as cors from 'cors';
-import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable CORS
-  app.use(
-    cors({
-      origin: process.env.FRONTEND_URL || 'http://localhost:4200',
-      credentials: true,
-    }),
-  );
-
-  // Security
-  app.use(helmet());
+  app.enableCors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    credentials: true,
+  });
 
   // Global validation pipe
   app.useGlobalPipes(

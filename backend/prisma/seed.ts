@@ -8,7 +8,7 @@ async function main() {
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('@_Kimunyi123!', 12);
-  
+
   const adminUser = await prisma.user.upsert({
     where: { email: 'jkkimunyi@gmail.com' },
     update: {},
@@ -40,8 +40,8 @@ async function main() {
       doors: 4,
       color: 'White',
       licensePlate: 'KCA-001A',
-      pricePerDay: 50.00,
-      pricePerHour: 8.00,
+      pricePerDay: 50.0,
+      pricePerHour: 8.0,
       description: 'Comfortable sedan perfect for business trips',
       location: 'Nairobi, Kenya',
       features: ['Air Conditioning', 'Bluetooth', 'GPS', 'USB Charging'],
@@ -58,8 +58,8 @@ async function main() {
       doors: 5,
       color: 'Black',
       licensePlate: 'KCB-002B',
-      pricePerDay: 75.00,
-      pricePerHour: 12.00,
+      pricePerDay: 75.0,
+      pricePerHour: 12.0,
       description: 'Spacious SUV ideal for family trips',
       location: 'Nairobi, Kenya',
       features: ['Air Conditioning', 'Bluetooth', 'GPS', 'Sunroof', '4WD'],

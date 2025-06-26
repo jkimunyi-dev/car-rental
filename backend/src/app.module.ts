@@ -11,9 +11,7 @@ import { UsersModule } from './users/users.module';
 import { PaymentsController } from './payments/payments.controller';
 import { PaymentsService } from './payments/payments.service';
 import { PaymentsModule } from './payments/payments.module';
-import { AdminController } from './admin/admin.controller';
-import { AdminService } from './admin/admin.service';
-import { AdminModule } from './admin/admin.module';
+
 import { PrismaService } from './prisma/prisma.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { UploadService } from './upload/upload.service';
@@ -21,6 +19,7 @@ import { UploadModule } from './upload/upload.module';
 import { EmailService } from './email/email.service';
 import { EmailModule } from './email/email.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { BookingsModule } from './bookings/bookings.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import configuration from './config/configuration';
 
@@ -33,18 +32,22 @@ import configuration from './config/configuration';
     AuthModule,
     UsersModule,
     PaymentsModule,
-    AdminModule,
     PrismaModule,
     UploadModule,
     EmailModule,
     VehiclesModule,
+    BookingsModule,
   ],
-  controllers: [AppController, AuthController, UsersController, PaymentsController, AdminController],
+  controllers: [
+    AppController,
+    AuthController,
+    UsersController,
+    PaymentsController,
+  ],
   providers: [
     AppService,
     UsersService,
     PaymentsService,
-    AdminService,
     PrismaService,
     UploadService,
     EmailService,

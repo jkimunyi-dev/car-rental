@@ -1,5 +1,5 @@
 import { IsOptional, IsString, IsInt, Min, Max, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 
 export class ApiResponse<T> {
   success: boolean;
@@ -26,16 +26,15 @@ export class ApiResponse<T> {
   }
 }
 
-// src/common/dto/pagination.dto.ts
 export class PaginationDto {
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => parseInt(value))
   @IsInt()
   @Min(1)
   page?: number = 1;
 
   @IsOptional()
-  @Type(() => Number)
+  @Transform(({ value }) => parseInt(value))
   @IsInt()
   @Min(1)
   @Max(100)
@@ -58,4 +57,15 @@ export class PaginatedResponse<T> {
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
+}
+
+export class ApiResponseDto<T> {
+  data: T;
+  meta?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  message?: string;
 }

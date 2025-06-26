@@ -13,6 +13,8 @@ export default () => ({
     port: parseInt(process.env.MAIL_PORT, 10) || 587,
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
+    refreshSecret:
+      process.env.JWT_REFRESH_SECRET || 'qwertyuiopasdfghjklzxcvbnm',
   },
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME,
