@@ -12,7 +12,7 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
 import { AvailabilityUpdateDto } from './dto/availability-update.dto';
 import { BulkImportDto } from './dto/bulk-import.dto';
-import { VehicleStatus, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import * as csv from 'csv-parser';
 import { Readable } from 'stream';
 

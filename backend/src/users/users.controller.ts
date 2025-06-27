@@ -13,18 +13,23 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Role } from '@prisma/client';
-import { Public } from '../auth/decorators/public.decorator';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -36,7 +41,11 @@ export class UsersController {
   @Post()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new user (Admin only)' })
-  @ApiResponse({ status: 201, description: 'User created successfully', type: UserResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User created successfully',
+    type: UserResponseDto,
+  })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto);
   }
@@ -44,7 +53,11 @@ export class UsersController {
   @Get()
   @Roles(Role.ADMIN, Role.AGENT)
   @ApiOperation({ summary: 'Get all users (Admin/Agent only)' })
-  @ApiResponse({ status: 200, description: 'Users retrieved successfully', type: [UserResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Users retrieved successfully',
+    type: [UserResponseDto],
+  })
   async findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '10',
@@ -63,14 +76,22 @@ export class UsersController {
 
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile retrieved successfully', type: UserResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile retrieved successfully',
+    type: UserResponseDto,
+  })
   async getProfile(@CurrentUser() user: any): Promise<UserResponseDto> {
     return this.usersService.findOne(user.id);
   }
 
   @Patch('profile')
   @ApiOperation({ summary: 'Update current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile updated successfully', type: UserResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully',
+    type: UserResponseDto,
+  })
   async updateProfile(
     @CurrentUser() user: any,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -106,7 +127,10 @@ export class UsersController {
 
   @Get('activity')
   @ApiOperation({ summary: 'Get user activity log' })
-  @ApiResponse({ status: 200, description: 'Activity log retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity log retrieved successfully',
+  })
   async getActivity(
     @CurrentUser() user: any,
     @Query('page') page = '1',
@@ -121,7 +145,11 @@ export class UsersController {
   @Get(':id')
   @Roles(Role.ADMIN, Role.AGENT)
   @ApiOperation({ summary: 'Get user by ID (Admin/Agent only)' })
-  @ApiResponse({ status: 200, description: 'User retrieved successfully', type: UserResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User retrieved successfully',
+    type: UserResponseDto,
+  })
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
     return this.usersService.findOne(id);
   }
@@ -129,7 +157,11 @@ export class UsersController {
   @Patch(':id')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Update user by ID (Admin only)' })
-  @ApiResponse({ status: 200, description: 'User updated successfully', type: UserResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User updated successfully',
+    type: UserResponseDto,
+  })
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,

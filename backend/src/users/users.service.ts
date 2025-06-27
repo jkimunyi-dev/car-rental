@@ -8,12 +8,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { CloudinaryUploadResult } from './user.interface';
 
 interface FindAllOptions {
   page: number;
@@ -39,15 +40,14 @@ export class UsersService {
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
-        OR: [
-          { email: createUserDto.email },
-          { phone: createUserDto.phone },
-        ],
+        OR: [{ email: createUserDto.email }, { phone: createUserDto.phone }],
       },
     });
 
     if (existingUser) {
-      throw new ConflictException('User with this email or phone already exists');
+      throw new ConflictException(
+        'User with this email or phone already exists',
+      );
     }
 
     // Hash password
@@ -57,7 +57,9 @@ export class UsersService {
       data: {
         ...createUserDto,
         password: hashedPassword,
-        dateOfBirth: createUserDto.dateOfBirth ? new Date(createUserDto.dateOfBirth) : null,
+        dateOfBirth: createUserDto.dateOfBirth
+          ? new Date(createUserDto.dateOfBirth)
+          : null,
       },
     });
 
@@ -122,9 +124,12 @@ export class UsersService {
     return this.formatUserResponse(user);
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -154,7 +159,9 @@ export class UsersService {
       where: { id },
       data: {
         ...updateUserDto,
-        dateOfBirth: updateUserDto.dateOfBirth ? new Date(updateUserDto.dateOfBirth) : undefined,
+        dateOfBirth: updateUserDto.dateOfBirth
+          ? new Date(updateUserDto.dateOfBirth)
+          : undefined,
       },
     });
 
@@ -164,9 +171,12 @@ export class UsersService {
     return this.formatUserResponse(updatedUser);
   }
 
-  async updateProfile(id: string, updateProfileDto: UpdateProfileDto): Promise<UserResponseDto> {
+  async updateProfile(
+    id: string,
+    updateProfileDto: UpdateProfileDto,
+  ): Promise<UserResponseDto> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -175,7 +185,9 @@ export class UsersService {
       where: { id },
       data: {
         ...updateProfileDto,
-        dateOfBirth: updateProfileDto.dateOfBirth ? new Date(updateProfileDto.dateOfBirth) : undefined,
+        dateOfBirth: updateProfileDto.dateOfBirth
+          ? new Date(updateProfileDto.dateOfBirth)
+          : undefined,
       },
     });
 
@@ -187,14 +199,17 @@ export class UsersService {
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     try {
       // Upload to Cloudinary
-      const uploadResult = await this.uploadService.uploadImage(file, 'users/avatars');
+      const uploadResult = (await this.uploadService.uploadImage(
+        file,
+        'users/avatars',
+      )) as CloudinaryUploadResult;
 
       // Update user avatar
       const updatedUser = await this.prisma.user.update({
@@ -203,20 +218,28 @@ export class UsersService {
       });
 
       // Log activity
-      await this.logActivity(userId, 'AVATAR_UPDATED', 'User updated their avatar');
+      await this.logActivity(
+        userId,
+        'AVATAR_UPDATED',
+        'User updated their avatar',
+      );
 
       return {
         message: 'Avatar uploaded successfully',
         avatarUrl: updatedUser.avatar,
       };
-    } catch (error) {
+    } catch (uploadError) {
+      console.error('Upload error:', uploadError);
       throw new BadRequestException('Failed to upload avatar');
     }
   }
 
-  async changePassword(userId: string, changePasswordDto: ChangePasswordDto): Promise<void> {
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -232,7 +255,10 @@ export class UsersService {
     }
 
     // Hash new password
-    const hashedNewPassword = await bcrypt.hash(changePasswordDto.newPassword, 12);
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      12,
+    );
 
     // Update password
     await this.prisma.user.update({
@@ -241,7 +267,11 @@ export class UsersService {
     });
 
     // Log activity
-    await this.logActivity(userId, 'PASSWORD_CHANGED', 'User changed their password');
+    await this.logActivity(
+      userId,
+      'PASSWORD_CHANGED',
+      'User changed their password',
+    );
 
     // Logout all sessions (remove all refresh tokens)
     await this.prisma.refreshToken.deleteMany({ where: { userId } });
@@ -249,7 +279,7 @@ export class UsersService {
 
   async remove(id: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -262,7 +292,7 @@ export class UsersService {
 
   async updateStatus(id: string, isActive: boolean): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id } });
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -274,7 +304,9 @@ export class UsersService {
 
     // Log activity
     const action = isActive ? 'USER_ACTIVATED' : 'USER_DEACTIVATED';
-    const description = isActive ? 'User account activated' : 'User account deactivated';
+    const description = isActive
+      ? 'User account activated'
+      : 'User account deactivated';
     await this.logActivity(id, action, description);
 
     // If deactivating, remove all refresh tokens
@@ -348,7 +380,8 @@ export class UsersService {
   }
 
   private formatUserResponse(user: any): UserResponseDto {
-    const { password, ...userWithoutPassword } = user;
+    // Destructure to remove password and other sensitive data
+    const { password: _password, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 }

@@ -1,4 +1,9 @@
-import { VehicleCategory, TransmissionType, FuelType, VehicleStatus } from '@prisma/client';
+import {
+  VehicleCategory,
+  TransmissionType,
+  FuelType,
+  VehicleStatus,
+} from '@prisma/client';
 
 export class VehicleResponseDto {
   id: string;
