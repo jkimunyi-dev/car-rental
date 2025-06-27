@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Reminder</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: #f59e0b; color: white; padding: 30px 20px; text-align: center; }
+        .reminder-icon { font-size: 48px; margin-bottom: 15px; }
+        .content { padding: 30px; }
+        .reminder-card { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center; }
+        .countdown { font-size: 36px; font-weight: bold; color: #92400e; margin: 15px 0; }
+        .vehicle-info { background: #f8fafc; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .checklist { background: #fff; border: 1px solid #d1d5db; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .checklist h4 { color: #374151; margin-bottom: 15px; }
+        .checklist ul { list-style: none; }
+        .checklist li { padding: 8px 0; display: flex; align-items: center; }
+        .checklist li::before { content: "✓"; color: #059669; font-weight: bold; margin-right: 10px; }
+        .cta-button { display: inline-block; background: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="reminder-icon">⏰</div>
+            <h1>Booking Reminder</h1>
+            <p>Your vehicle <% if (reminderType === 'pickup') { %>pickup<% } else { %>return<% } %> is coming up!</p>
+        </div>
+        
+        <div class="content">
+            <div class="reminder-card">
+                <h2 style="color: #92400e; margin-bottom: 10px;">
+                    <% if (reminderType === 'pickup') { %>🚗 Pickup Reminder<% } else { %>🏁 Return Reminder<% } %>
+                </h2>
+                <p style="color: #92400e; font-size: 16px;">
+                    <% if (reminderType === 'pickup') { %>
+                        Your vehicle is ready for pickup in:
+                    <% } else { %>
+                        Your vehicle return is due in:
+                    <% } %>
+                </p>
+                <div class="countdown"><%= hoursUntil %> hours</div>
+                <p style="color: #92400e;">
+                    <% if (reminderType === 'pickup') { %>
+                        Don't keep your adventure waiting!
+                    <% } else { %>
+                        Please return on time to avoid additional charges.
+                    <% } %>
+                </p>
+            </div>
+            
+            <div class="vehicle-info">
+                <h3 style="margin-bottom: 15px;">Your Vehicle Details</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <p style="color: #64748b; font-size: 14px;">Vehicle</p>
+                        <p style="font-weight: 600;"><%= booking.vehicle.make %> <%= booking.vehicle.model %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px;">License Plate</p>
+                        <p style="font-weight: 600;"><%= booking.vehicle.licensePlate %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px;">
+                            <% if (reminderType === 'pickup') { %>Pickup<% } else { %>Return<% } %> Date
+                        </p>
+                        <p style="font-weight: 600;">
+                            <% if (reminderType === 'pickup') { %>
+                                <%= new Date(booking.startDate).toLocaleDateString() %>
+                            <% } else { %>
+                                <%= new Date(booking.endDate).toLocaleDateString() %>
+                            <% } %>
+                        </p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px;">Location</p>
+                        <p style="font-weight: 600;">
+                            <% if (reminderType === 'pickup') { %>
+                                <%= booking.pickupLocation %>
+                            <% } else { %>
+                                <%= booking.dropoffLocation || booking.pickupLocation %>
+                            <% } %>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="checklist">
+                <h4>
+                    <% if (reminderType === 'pickup') { %>
+                        📋 Pickup Checklist
+                    <% } else { %>
+                        📋 Return Checklist
+                    <% } %>
+                </h4>
+                <ul>
+                    <% if (reminderType === 'pickup') { %>
+                        <li>Bring a valid driver's license</li>
+                        <li>Bring the credit card used for booking</li>
+                        <li>Arrive 15 minutes early</li>
+                        <li>Check vehicle condition during inspection</li>
+                        <li>Confirm pickup location and time</li>
+                    <% } else { %>
+                        <li>Return with the same fuel level</li>
+                        <li>Clean out personal belongings</li>
+                        <li>Return on time to avoid late fees</li>
+                        <li>Document any new damage</li>
+                        <li>Keep your receipt</li>
+                    <% } %>
+                </ul>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="<%= bookingUrl %>" class="cta-button">View Booking Details</a>
+            </div>
+            
+            <div style="background: #e0f2fe; border: 1px solid #0288d1; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #01579b; margin-bottom: 10px;">💡 Quick Tip</h4>
+                <p style="color: #01579b;">
+                    <% if (reminderType === 'pickup') { %>
+                        Save time at pickup by completing your digital check-in through our mobile app.
+                    <% } else { %>
+                        Take photos of the vehicle before returning to document its condition.
+                    <% } %>
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Questions?</strong> Contact us at support@carental.com or call (555) 123-4567</p>
+            <p style="margin-top: 10px;">© 2024 Car Rental Service. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

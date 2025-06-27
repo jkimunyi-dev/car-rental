@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special Offer Just for You!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 40px 20px; text-align: center; }
+        .offer-badge { background: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 25px; display: inline-block; margin-bottom: 15px; }
+        .content { padding: 30px; }
+        .offer-card { background: #fef3c7; border: 2px solid #f59e0b; border-radius: 12px; padding: 30px; margin: 25px 0; text-align: center; }
+        .discount-amount { font-size: 48px; font-weight: bold; color: #d97706; margin: 15px 0; }
+        .coupon-code { background: #fff; border: 2px dashed #f59e0b; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold; color: #d97706; margin: 20px 0; }
+        .cta-button { display: inline-block; background: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .expiry-warning { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 15px; margin: 20px 0; color: #991b1b; text-align: center; }
+        .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="offer-badge">EXCLUSIVE OFFER</div>
+            <h1>🎉 <%= offerTitle %></h1>
+            <p>Limited time special offer just for you!</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello <%= user.firstName %>!</h2>
+            <p style="font-size: 16px; margin: 20px 0; color: #666;">
+                We have an exclusive offer that we think you'll love. Don't miss out on this limited-time deal!
+            </p>
+            
+            <div class="offer-card">
+                <h3 style="color: #d97706; margin-bottom: 15px;"><%= offerDescription %></h3>
+                
+                <div class="discount-amount">
+                    <% if (discountType === 'percentage') { %>
+                        <%= discountAmount %>% OFF
+                    <% } else { %>
+                        $<%= discountAmount %> OFF
+                    <% } %>
+                </div>
+                
+                <p style="margin: 20px 0; color: #92400e;">Use this exclusive coupon code:</p>
+                
+                <div class="coupon-code">
+                    <%= couponCode %>
+                </div>
+                
+                <p style="font-size: 14px; color: #92400e; margin-top: 15px;">
+                    Click to copy code and start booking
+                </p>
+                
+                <a href="<%= ctaUrl %>" class="cta-button">Book Now & Save</a>
+            </div>
+            
+            <div class="expiry-warning">
+                <p style="font-weight: 600;">⏰ Hurry! This offer expires on <%= new Date(validUntil).toLocaleDateString() %></p>
+            </div>
+            
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #0c4a6e; margin-bottom: 10px;">💡 How to Use Your Coupon</h4>
+                <ol style="color: #0c4a6e; padding-left: 20px;">
+                    <li>Browse and select your perfect vehicle</li>
+                    <li>Enter coupon code "<%= couponCode %>" at checkout</li>
+                    <li>Enjoy your discount and hit the road!</li>
+                </ol>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="<%= ctaUrl %>" style="background: #f59e0b; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 18px;">Book Your Vehicle Now</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Terms and conditions apply. Cannot be combined with other offers.</p>
+            <p style="margin-top: 10px;">
+                Don't want promotional emails? 
+                <a href="<%= unsubscribeUrl %>" style="color: #667eea;">Unsubscribe here</a>
+            </p>
+            <p style="margin-top: 15px;">© 2024 Car Rental Service. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

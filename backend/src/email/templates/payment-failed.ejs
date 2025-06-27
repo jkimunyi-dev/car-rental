@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed - Action Required</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: #dc2626; color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        .alert-icon { font-size: 48px; margin-bottom: 15px; }
+        .content { padding: 30px; }
+        .failure-card { background: #fef2f2; border: 2px solid #fecaca; border-radius: 12px; padding: 25px; margin: 20px 0; }
+        .retry-button { display: inline-block; background: #dc2626; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .booking-info { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .urgent { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 20px; margin: 20px 0; color: #92400e; }
+        .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="alert-icon">⚠️</div>
+            <h1>Payment Failed</h1>
+            <p>Action required to secure your booking</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello <%= user.firstName %>,</h2>
+            <p style="font-size: 16px; margin: 20px 0; color: #666;">
+                We were unable to process your payment for the booking below. Please take action to secure your reservation.
+            </p>
+            
+            <div class="failure-card">
+                <h3 style="color: #dc2626; margin-bottom: 15px;">💳 Payment Issue</h3>
+                <div style="background: #fff; border-radius: 6px; padding: 15px; margin: 15px 0;">
+                    <p style="margin-bottom: 10px;"><strong>Failure Reason:</strong></p>
+                    <p style="color: #dc2626; font-weight: 600;"><%= failureReason %></p>
+                </div>
+                <p style="margin-top: 15px;">Don't worry - your booking is still reserved for a limited time while you resolve this issue.</p>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="<%= retryUrl %>" class="retry-button">Retry Payment</a>
+                </div>
+            </div>
+            
+            <div class="booking-info">
+                <h3 style="margin-bottom: 15px; color: #1e293b;">Your Booking Details</h3>
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h4><%= booking.vehicle.make %> <%= booking.vehicle.model %></h4>
+                        <p style="color: #64748b; font-size: 14px;">Booking ID: #<%= booking.id.substring(0, 8).toUpperCase() %></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">PAYMENT PENDING</span>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Pickup Date</p>
+                        <p style="font-weight: 600;"><%= new Date(booking.startDate).toLocaleDateString() %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Return Date</p>
+                        <p style="font-weight: 600;"><%= new Date(booking.endDate).toLocaleDateString() %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Duration</p>
+                        <p style="font-weight: 600;"><%= booking.totalDays %> days</p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Amount Due</p>
+                        <p style="font-weight: 600; font-size: 18px; color: #dc2626;">$<%= booking.totalAmount.toFixed(2) %></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="urgent">
+                <h4 style="margin-bottom: 10px;">⏰ Time Sensitive</h4>
+                <ul style="padding-left: 20px;">
+                    <li>Your booking will be automatically cancelled if payment is not received within 24 hours</li>
+                    <li>Please retry your payment or contact support for assistance</li>
+                    <li>You can use a different payment method if needed</li>
+                </ul>
+            </div>
+            
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #0c4a6e; margin-bottom: 10px;">💡 Common Solutions</h4>
+                <ul style="color: #0c4a6e; padding-left: 20px;">
+                    <li>Check if you have sufficient funds in your account</li>
+                    <li>Verify your card details are entered correctly</li>
+                    <li>Contact your bank if the card is being declined</li>
+                    <li>Try using a different payment method</li>
+                </ul>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="<%= retryUrl %>" style="background: #dc2626; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin-right: 15px;">Complete Payment</a>
+                <a href="mailto:<%= supportEmail %>" style="background: #6b7280; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">Get Help</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Need immediate assistance?</strong> Contact our support team at <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a></p>
+            <p style="margin-top: 15px;">© 2024 Car Rental Service. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -15,17 +15,20 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { Role } from '@prisma/client';
+import { IAuthService } from './auth.interface';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
-export class AuthService {
-  private readonly refreshTokenExpiresIn = 7 * 24 * 60 * 60 * 1000; // 7 days
-  private readonly accessTokenExpiresIn = 60 * 60 * 1000; // 1 hour
-  private readonly maxLoginAttempts = 5;
-  private readonly lockoutDuration = 15 * 60 * 1000; // 15 minutes
+export class AuthService implements IAuthService {
+  public readonly refreshTokenExpiresIn = 7 * 24 * 60 * 60 * 1000; // 7 days
+  public readonly accessTokenExpiresIn = 60 * 60 * 1000; // 1 hour
+  public readonly maxLoginAttempts = 5;
+  public readonly lockoutDuration = 15 * 60 * 1000; // 15 minutes
 
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
@@ -72,7 +75,14 @@ export class AuthService {
     const tokens = await this.generateTokens(user.id);
 
     // Send verification email (implement this based on your email service)
-    // await this.sendVerificationEmail(user.email);
+    await this.emailService.sendWelcomeEmail({
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+      verificationUrl: this.generateVerificationUrl(user.id),
+    });
 
     return {
       user,
@@ -227,8 +237,16 @@ export class AuthService {
       },
     });
 
-    // Send reset email (implement based on your email service)
-    // await this.sendPasswordResetEmail(user.email, resetToken);
+    // Send password reset email
+    await this.emailService.sendPasswordReset({
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+      resetUrl: this.generateResetUrl(resetToken),
+      expiresIn: '1 hour',
+    });
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
@@ -311,7 +329,7 @@ export class AuthService {
     });
   }
 
-  private async generateTokens(userId: string, rememberMe = false) {
+  async generateTokens(userId: string, rememberMe = false) {
     const payload = { sub: userId };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -340,7 +358,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async checkRateLimit(email: string): Promise<void> {
+  async checkRateLimit(email: string): Promise<void> {
     const key = `login_attempts_${email}`;
     const attempts = await this.prisma.systemSettings.findUnique({
       where: { key },
@@ -370,7 +388,7 @@ export class AuthService {
     }
   }
 
-  private async recordFailedAttempt(email: string): Promise<void> {
+  async recordFailedAttempt(email: string): Promise<void> {
     const key = `login_attempts_${email}`;
     const attempts = await this.prisma.systemSettings.findUnique({
       where: { key },
@@ -391,10 +409,20 @@ export class AuthService {
     });
   }
 
-  private async resetFailedAttempts(email: string): Promise<void> {
+  async resetFailedAttempts(email: string): Promise<void> {
     const key = `login_attempts_${email}`;
     await this.prisma.systemSettings.deleteMany({
       where: { key },
     });
+  }
+
+  private generateVerificationUrl(userId: string): string {
+    // Implement your verification URL generation logic
+    return `http://your-frontend.com/verify-email?token=${userId}`;
+  }
+
+  private generateResetUrl(resetToken: string): string {
+    // Implement your password reset URL generation logic
+    return `http://your-frontend.com/reset-password?token=${resetToken}`;
   }
 }

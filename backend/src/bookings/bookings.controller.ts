@@ -125,7 +125,11 @@ export class BookingsController {
       throw new BadRequestException('Start date and end date are required');
     }
 
-    return this.bookingsService.checkAvailability(vehicleId, startDate, endDate);
+    return this.bookingsService.checkAvailability(
+      vehicleId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('calculate-price/:vehicleId')
@@ -184,7 +188,12 @@ export class BookingsController {
     @Body() updateBookingDto: UpdateBookingDto,
     @CurrentUser() user: any,
   ): Promise<BookingResponseDto> {
-    return this.bookingsService.update(id, updateBookingDto, user.id, user.role);
+    return this.bookingsService.update(
+      id,
+      updateBookingDto,
+      user.id,
+      user.role,
+    );
   }
 
   @Patch(':id/status')
@@ -215,6 +224,11 @@ export class BookingsController {
     @Body() cancelBookingDto: CancelBookingDto,
     @CurrentUser() user: any,
   ): Promise<BookingResponseDto> {
-    return this.bookingsService.cancel(id, cancelBookingDto, user.id, user.role);
+    return this.bookingsService.cancel(
+      id,
+      cancelBookingDto,
+      user.id,
+      user.role,
+    );
   }
 }

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How was your experience?</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        .star-icon { font-size: 48px; margin-bottom: 15px; }
+        .content { padding: 30px; }
+        .review-card { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 12px; padding: 25px; margin: 20px 0; text-align: center; }
+        .rating-stars { font-size: 30px; margin: 20px 0; }
+        .review-button { display: inline-block; background: #8b5cf6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .booking-recap { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="star-icon">⭐</div>
+            <h1>How was your experience?</h1>
+            <p>We'd love to hear about your recent rental</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello <%= user.firstName %>!</h2>
+            <p style="font-size: 16px; margin: 20px 0; color: #666;">
+                Thank you for choosing Car Rental Service for your recent trip. We hope you had a great experience with the <%= booking.vehicle.make %> <%= booking.vehicle.model %>!
+            </p>
+            
+            <div class="review-card">
+                <h3 style="color: #7c3aed; margin-bottom: 15px;">📝 Share Your Experience</h3>
+                <p style="margin-bottom: 20px;">Your feedback helps us improve our service and helps other customers make informed decisions.</p>
+                
+                <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                
+                <p style="margin-bottom: 25px; color: #666;">Click below to rate your experience and leave a review:</p>
+                
+                <a href="<%= reviewUrl %>" class="review-button">Write a Review</a>
+            </div>
+            
+            <div class="booking-recap">
+                <h3 style="margin-bottom: 15px; color: #1e293b;">Your Recent Rental</h3>
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h4><%= booking.vehicle.make %> <%= booking.vehicle.model %></h4>
+                        <p style="color: #64748b; font-size: 14px;">Completed: <%= new Date(booking.endDate).toLocaleDateString() %></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">COMPLETED</span>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Rental Period</p>
+                        <p style="font-weight: 600;"><%= booking.totalDays %> days</p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">License Plate</p>
+                        <p style="font-weight: 600;"><%= booking.vehicle.licensePlate %></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #065f46; margin-bottom: 10px;">🎁 Review Incentive</h4>
+                <p style="color: #065f46;">
+                    Leave a detailed review and get a 10% discount on your next rental! The discount will be automatically applied to your account.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <p style="color: #666; margin-bottom: 20px;">Your review will help us serve you better</p>
+                <a href="<%= reviewUrl %>" style="background: #8b5cf6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">Leave Your Review</a>
+            </div>
+            
+            <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
+                <h4 style="color: #0c4a6e; margin-bottom: 10px;">🚗 Book Your Next Adventure</h4>
+                <p style="color: #0c4a6e; margin-bottom: 15px;">Ready for your next trip? Browse our fleet of vehicles.</p>
+                <a href="<%= frontendUrl %>/vehicles" style="background: #0ea5e9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600;">Browse Vehicles</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Questions about your rental?</strong> Contact us at support@carental.com</p>
+            <p style="margin-top: 15px;">© 2024 Car Rental Service. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

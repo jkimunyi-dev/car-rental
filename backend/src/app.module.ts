@@ -21,6 +21,9 @@ import { EmailModule } from './email/email.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { AdminController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
+import { AdminModule } from './admin/admin.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -37,12 +40,14 @@ import configuration from './config/configuration';
     EmailModule,
     VehiclesModule,
     BookingsModule,
+    AdminModule,
   ],
   controllers: [
     AppController,
     AuthController,
     UsersController,
     PaymentsController,
+    AdminController,
   ],
   providers: [
     AppService,
@@ -55,6 +60,7 @@ import configuration from './config/configuration';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    AdminService,
   ],
 })
 export class AppModule {}

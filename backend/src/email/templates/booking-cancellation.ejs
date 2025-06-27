@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Cancelled</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f8f9fa; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; }
+        .header { background: #ef4444; color: white; padding: 30px 20px; text-align: center; }
+        .header h1 { font-size: 24px; margin-bottom: 10px; }
+        .cancel-icon { font-size: 48px; margin-bottom: 15px; }
+        .content { padding: 30px; }
+        .cancellation-card { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 25px; margin: 20px 0; }
+        .booking-summary { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .refund-info { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 20px 0; }
+        .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="cancel-icon">❌</div>
+            <h1>Booking Cancelled</h1>
+            <p>Your reservation has been cancelled</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello <%= user.firstName %>,</h2>
+            <p style="font-size: 16px; margin: 20px 0; color: #666;">
+                We're sorry to inform you that your booking has been cancelled. Here are the details:
+            </p>
+            
+            <div class="cancellation-card">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h3>Cancelled Booking</h3>
+                        <p style="color: #666; font-size: 14px;">Booking ID: #<%= booking.id.substring(0, 8).toUpperCase() %></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #fee2e2; color: #991b1b; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">CANCELLED</span>
+                    </div>
+                </div>
+                
+                <% if (cancellationReason) { %>
+                <div style="margin-top: 15px;">
+                    <h4 style="color: #374151; margin-bottom: 5px;">Reason for Cancellation:</h4>
+                    <p style="color: #6b7280;"><%= cancellationReason %></p>
+                </div>
+                <% } %>
+            </div>
+            
+            <div class="booking-summary">
+                <h3 style="margin-bottom: 15px; color: #1e293b;">Booking Summary</h3>
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <h4><%= booking.vehicle.make %> <%= booking.vehicle.model %></h4>
+                        <p style="color: #64748b; font-size: 14px;">License: <%= booking.vehicle.licensePlate %></p>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Pickup Date</p>
+                        <p style="font-weight: 600;"><%= new Date(booking.startDate).toLocaleDateString() %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Return Date</p>
+                        <p style="font-weight: 600;"><%= new Date(booking.endDate).toLocaleDateString() %></p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Duration</p>
+                        <p style="font-weight: 600;"><%= booking.totalDays %> days</p>
+                    </div>
+                    <div>
+                        <p style="color: #64748b; font-size: 14px; margin-bottom: 2px;">Total Amount</p>
+                        <p style="font-weight: 600;">$<%= booking.totalAmount.toFixed(2) %></p>
+                    </div>
+                </div>
+            </div>
+            
+            <% if (refundAmount && refundAmount > 0) { %>
+            <div class="refund-info">
+                <h4 style="color: #059669; margin-bottom: 10px;">💰 Refund Information</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span>Refund Amount:</span>
+                    <span style="font-weight: 600; font-size: 18px; color: #059669;">$<%= refundAmount.toFixed(2) %></span>
+                </div>
+                <p style="color: #065f46; font-size: 14px;">
+                    Your refund will be processed within <%= refundProcessingDays %> business days and will appear on your original payment method.
+                </p>
+            </div>
+            <% } %>
+            
+            <div style="background: #e0f2fe; border: 1px solid #0288d1; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                <h4 style="color: #01579b; margin-bottom: 10px;">🤝 We're Here to Help</h4>
+                <p style="color: #01579b;">
+                    We understand that cancellations can be disappointing. Our team is ready to help you find an alternative vehicle or assist with any questions you may have.
+                </p>
+                <div style="margin-top: 15px;">
+                    <a href="<%= frontendUrl %>/vehicles" style="background: #0288d1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600; margin-right: 10px;">Browse Vehicles</a>
+                    <a href="mailto:<%= supportEmail %>" style="background: #6b7280; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600;">Contact Support</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Need assistance?</strong> Contact our support team at <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a></p>
+            <p style="margin-top: 15px;">© 2024 Car Rental Service. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

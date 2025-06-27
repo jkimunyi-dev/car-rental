@@ -13,7 +13,15 @@ export class UploadService {
     });
   }
 
-  async uploadImage(file: Express.Multer.File, folder: string = 'uploads') {
+  async uploadImage(
+    file: Express.Multer.File,
+    folder: string = 'uploads',
+    transformation: any[] = [
+      { width: 1200, height: 800, crop: 'limit' },
+      { quality: 'auto' },
+      { format: 'webp' },
+    ],
+  ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -37,11 +45,7 @@ export class UploadService {
         const uploadStream = cloudinary.uploader.upload_stream(
           {
             folder,
-            transformation: [
-              { width: 1200, height: 800, crop: 'limit' },
-              { quality: 'auto' },
-              { format: 'webp' },
-            ],
+            transformation,
           },
           (error, result) => {
             if (error) reject(error);
@@ -57,6 +61,27 @@ export class UploadService {
     } catch (error) {
       throw new BadRequestException(`Image upload failed: ${error.message}`);
     }
+  }
+
+  async uploadImages(
+    files: Express.Multer.File[],
+    folder: string = 'uploads',
+    maxFiles = 10,
+  ) {
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+    if (files.length > maxFiles) {
+      throw new BadRequestException(`Maximum ${maxFiles} files allowed`);
+    }
+    const results = [];
+    for (const file of files) {
+      if (!file.buffer || file.size === 0) {
+        throw new BadRequestException('Empty file detected');
+      }
+      results.push(await this.uploadImage(file, folder));
+    }
+    return results;
   }
 
   async uploadImageFromUrl(url: string, folder: string = 'uploads') {
