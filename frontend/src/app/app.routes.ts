@@ -4,6 +4,10 @@ import { EmailVerificationGuard } from './core/guards/email-verification.guard';
 
 export const routes: Routes = [
   {
+    path: '',
+    loadComponent: () => import('./features/home/home').then(m => m.Home)
+  },
+  {
     path: 'auth',
     canActivate: [UnauthGuard],
     children: [
@@ -35,8 +39,7 @@ export const routes: Routes = [
     ]
   },
   {
-    path: '',
-    pathMatch: 'full',
+    path: '**',
     redirectTo: ''
   }
 ];
