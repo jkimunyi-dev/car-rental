@@ -83,15 +83,15 @@ export class WishlistController {
     return this.wishlistService.setNotification(req.user.id, notificationDto);
   }
 
-  @Post('share')
-  @ApiOperation({ summary: 'Share wishlist with friends via email' })
-  @ApiResponse({ status: 200, description: 'Wishlist shared successfully' })
-  async shareWishlist(
-    @Request() req: any,
-    @Body() shareDto: ShareWishlistDto,
-  ): Promise<{ message: string }> {
-    return this.wishlistService.shareWishlist(req.user.id, shareDto);
-  }
+//   @Post('share')
+//   @ApiOperation({ summary: 'Share wishlist with friends via email' })
+//   @ApiResponse({ status: 200, description: 'Wishlist shared successfully' })
+//   async shareWishlist(
+//     @Request() req: any,
+//     @Body() shareDto: ShareWishlistDto,
+//   ): Promise<{ message: string }> {
+//     return this.wishlistService.shareWishlist(req.user.id, shareDto);
+//   }
 
   @Get(':vehicleId/quick-book')
   @ApiOperation({ summary: 'Get quick booking URL for wishlisted vehicle' })

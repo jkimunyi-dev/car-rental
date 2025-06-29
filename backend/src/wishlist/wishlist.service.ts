@@ -223,43 +223,43 @@ export class WishlistService {
     };
   }
 
-  async shareWishlist(userId: string, shareDto: ShareWishlistDto): Promise<{ message: string }> {
-    const { emails, message } = shareDto;
+//   async shareWishlist(userId: string, shareDto: ShareWishlistDto): Promise<{ message: string }> {
+//     const { emails, message } = shareDto;
 
-    // Get user's wishlist
-    const wishlistItems = await this.prisma.wishlist.findMany({
-      where: { userId },
-      include: {
-        vehicle: true,
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-    });
+//     // Get user's wishlist
+//     const wishlistItems = await this.prisma.wishlist.findMany({
+//       where: { userId },
+//       include: {
+//         vehicle: true,
+//         user: {
+//           select: {
+//             firstName: true,
+//             lastName: true,
+//             email: true,
+//           },
+//         },
+//       },
+//     });
 
-    if (wishlistItems.length === 0) {
-      throw new NotFoundException('Your wishlist is empty');
-    }
+//     if (wishlistItems.length === 0) {
+//       throw new NotFoundException('Your wishlist is empty');
+//     }
 
-    // Send emails to all recipients
-    for (const email of emails) {
-      await this.emailService.sendWishlistShare({
-        recipientEmail: email,
-        sharedBy: `${wishlistItems[0].user.firstName} ${wishlistItems[0].user.lastName}`,
-        wishlistItems: wishlistItems.map(item => ({
-          vehicle: item.vehicle,
-          addedAt: item.createdAt,
-        })),
-        message,
-      });
-    }
+//     // Send emails to all recipients
+//     for (const email of emails) {
+//       await this.emailService.sendWishlistShare({
+//         recipientEmail: email,
+//         sharedBy: `${wishlistItems[0].user.firstName} ${wishlistItems[0].user.lastName}`,
+//         wishlistItems: wishlistItems.map(item => ({
+//           vehicle: item.vehicle,
+//           addedAt: item.createdAt,
+//         })),
+//         message,
+//       });
+//     }
 
-    return { message: `Wishlist shared with ${emails.length} recipient(s) successfully` };
-  }
+//     return { message: `Wishlist shared with ${emails.length} recipient(s) successfully` };
+//   }
 
   async quickBookFromWishlist(userId: string, vehicleId: string): Promise<{ bookingUrl: string }> {
     // Check if vehicle exists in wishlist
