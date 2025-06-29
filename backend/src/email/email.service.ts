@@ -120,13 +120,20 @@ export class EmailService implements IEmailService {
     });
   }
 
-  async sendEmailVerification(data: EmailVerificationContext): Promise<void> {
-    await this.addEmailToQueue({
+  async sendEmailVerification(data: {
+    user: { firstName: string; lastName: string; email: string };
+    verificationUrl: string;
+    expiresIn: string;
+  }): Promise<void> {
+    await this.mailerService.sendMail({
       to: data.user.email,
-      template: EmailTemplate.EMAIL_VERIFICATION,
-      subject: 'Verify Your Email Address',
-      context: data,
-      priority: EmailPriority.HIGH,
+      subject: 'Verify Your Email Address - Car Rental',
+      template: './email-verification',
+      context: {
+        user: data.user,
+        verificationUrl: data.verificationUrl,
+        expiresIn: data.expiresIn,
+      },
     });
   }
 

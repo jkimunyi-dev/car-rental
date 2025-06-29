@@ -14,7 +14,13 @@ import { Role } from '@prisma/client';
 
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { 
+  AuthResponseDto, 
+  RegisterResponseDto, 
+  MessageResponseDto,
+  UserDto,
+  AuthTokensDto 
+} from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { IAuthService } from './auth.interface';
@@ -32,7 +38,7 @@ export class AuthService implements IAuthService {
     private emailService: EmailService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
+  async register(registerDto: RegisterDto): Promise<RegisterResponseDto> {
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -88,25 +94,18 @@ export class AuthService implements IAuthService {
       },
     });
 
-    // Generate auth tokens
-    const tokens = await this.generateTokens(user.id);
-
     // Send welcome email with verification URL
-    await this.emailService.sendWelcomeEmail({
+    await this.emailService.sendEmailVerification({
       user: {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
       },
       verificationUrl: this.generateVerificationUrl(verificationToken),
+      expiresIn: '24 hours',
     });
 
-    return {
-      user,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresIn: this.accessTokenExpiresIn,
-    };
+    return new RegisterResponseDto(user.id, user.email);
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
@@ -138,7 +137,7 @@ export class AuthService implements IAuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Check if user is verified - NEW CHECK
+    // Check if user is verified
     if (!user.isVerified) {
       throw new UnauthorizedException(
         'Please verify your email address before logging in. Check your inbox for the verification email.',
@@ -151,19 +150,22 @@ export class AuthService implements IAuthService {
     // Generate tokens
     const tokens = await this.generateTokens(user.id, loginDto.rememberMe);
 
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
-        avatar: user.avatar,
-      },
+    const userDto: UserDto = {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      avatar: user.avatar,
+    };
+
+    const tokensDto: AuthTokensDto = {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
       expiresIn: this.accessTokenExpiresIn,
     };
+
+    return new AuthResponseDto(userDto, tokensDto, 'Login successful');
   }
 
   async refreshTokens(refreshToken: string): Promise<AuthResponseDto> {
@@ -195,44 +197,49 @@ export class AuthService implements IAuthService {
         where: { id: storedToken.id },
       });
 
-      return {
-        user: {
-          id: storedToken.user.id,
-          email: storedToken.user.email,
-          firstName: storedToken.user.firstName,
-          lastName: storedToken.user.lastName,
-          role: storedToken.user.role,
-          avatar: storedToken.user.avatar,
-        },
+      const userDto: UserDto = {
+        id: storedToken.user.id,
+        email: storedToken.user.email,
+        firstName: storedToken.user.firstName,
+        lastName: storedToken.user.lastName,
+        role: storedToken.user.role,
+        avatar: storedToken.user.avatar,
+      };
+
+      const tokensDto: AuthTokensDto = {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresIn: this.accessTokenExpiresIn,
       };
+
+      return new AuthResponseDto(userDto, tokensDto, 'Tokens refreshed successfully');
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
-  async logout(refreshToken: string): Promise<void> {
+  async logout(refreshToken: string): Promise<MessageResponseDto> {
     await this.prisma.refreshToken.deleteMany({
       where: { token: refreshToken },
     });
+    return new MessageResponseDto('Logout successful');
   }
 
-  async logoutAll(userId: string): Promise<void> {
+  async logoutAll(userId: string): Promise<MessageResponseDto> {
     await this.prisma.refreshToken.deleteMany({
       where: { userId },
     });
+    return new MessageResponseDto('All sessions logged out successfully');
   }
 
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void> {
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<MessageResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { email: forgotPasswordDto.email },
     });
 
     if (!user) {
       // Don't reveal if email exists
-      return;
+      return new MessageResponseDto('If your email is registered, you will receive a password reset link');
     }
 
     // Generate reset token
@@ -242,8 +249,7 @@ export class AuthService implements IAuthService {
       .update(resetToken)
       .digest('hex');
 
-    // Store hashed token in database (you might want to add a PasswordReset model)
-    // For now, we'll use a system setting
+    // Store hashed token in database
     await this.prisma.systemSettings.upsert({
       where: { key: `password_reset_${user.id}` },
       update: {
@@ -269,11 +275,13 @@ export class AuthService implements IAuthService {
         email: user.email,
       },
       resetUrl: this.generateResetUrl(resetToken),
-      expiresIn: '1 hour',
+      expiresIn: '10 minutes',
     });
+
+    return new MessageResponseDto('If your email is registered, you will receive a password reset link');
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void> {
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<MessageResponseDto> {
     const user = await this.prisma.user.findUnique({
       where: { email: resetPasswordDto.email },
     });
@@ -321,9 +329,11 @@ export class AuthService implements IAuthService {
 
     // Logout all sessions
     await this.logoutAll(user.id);
+
+    return new MessageResponseDto('Password reset successful');
   }
 
-  async verifyEmail(token: string): Promise<void> {
+  async verifyEmail(token: string): Promise<MessageResponseDto> {
     if (!token) {
       throw new BadRequestException('Verification token is required');
     }
@@ -383,7 +393,7 @@ export class AuthService implements IAuthService {
       await this.prisma.systemSettings.delete({
         where: { id: matchingEntry.id },
       });
-      return; // Email already verified
+      return new MessageResponseDto('Email already verified');
     }
 
     // Update user as verified
@@ -396,6 +406,60 @@ export class AuthService implements IAuthService {
     await this.prisma.systemSettings.delete({
       where: { id: matchingEntry.id },
     });
+
+    return new MessageResponseDto('Email verified successfully');
+  }
+
+  async resendVerificationEmail(email: string): Promise<MessageResponseDto> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    // Update or create verification token in database
+    await this.prisma.systemSettings.upsert({
+      where: { key: `email_verification_${user.id}` },
+      update: {
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        }),
+      },
+      create: {
+        key: `email_verification_${user.id}`,
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        }),
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendEmailVerification({
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+      verificationUrl: this.generateVerificationUrl(verificationToken),
+      expiresIn: '24 hours',
+    });
+
+    return new MessageResponseDto('Verification email sent successfully');
   }
 
   async generateTokens(userId: string, rememberMe = false) {
@@ -487,62 +551,11 @@ export class AuthService implements IAuthService {
 
   private generateVerificationUrl(verificationToken: string): string {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
-    return `${frontendUrl}/verify-email?token=${verificationToken}`;
+    return `${frontendUrl}/auth/verify-email?token=${verificationToken}`;
   }
 
   private generateResetUrl(resetToken: string): string {
-    // Implement your password reset URL generation logic
-    return `http://your-frontend.com/reset-password?token=${resetToken}`;
-  }
-
-  // Add method to resend verification email
-  async resendVerificationEmail(email: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (user.isVerified) {
-      throw new BadRequestException('Email is already verified');
-    }
-
-    // Generate new verification token
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const hashedVerificationToken = crypto
-      .createHash('sha256')
-      .update(verificationToken)
-      .digest('hex');
-
-    // Update or create verification token in database
-    await this.prisma.systemSettings.upsert({
-      where: { key: `email_verification_${user.id}` },
-      update: {
-        value: JSON.stringify({
-          token: hashedVerificationToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        }),
-      },
-      create: {
-        key: `email_verification_${user.id}`,
-        value: JSON.stringify({
-          token: hashedVerificationToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        }),
-      },
-    });
-
-    // Send verification email
-    await this.emailService.sendEmailVerification({
-      user: {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-      },
-      verificationUrl: this.generateVerificationUrl(verificationToken),
-      expiresIn: '24 hours',
-    });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    return `${frontendUrl}/auth/reset-password?token=${resetToken}`;
   }
 }
