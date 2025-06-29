@@ -71,23 +71,35 @@ export class PaymentsController {
 
   @Get(':id/invoice')
   @UseGuards(JwtAuthGuard)
-  async downloadInvoice(
-    @Param('id') id: string,
-    @Req() req,
-    @Res() res: Response,
-  ) {
-    const invoice = await this.paymentsService.generateInvoice(
+  async downloadInvoice(@Param('id') id: string, @Req() req) {
+    // Changed: Send invoice via email instead of returning PDF
+    await this.paymentsService.sendInvoiceByEmail(
       id,
       req.user.id,
       req.user.role,
     );
 
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="invoice-${id}.pdf"`,
-    });
+    return {
+      success: true,
+      message: `Invoice has been generated and sent to your email address`,
+      timestamp: new Date().toISOString(),
+    };
+  }
 
-    res.send(invoice);
+  @Post(':id/invoice/send')
+  @UseGuards(JwtAuthGuard)
+  async sendInvoiceByEmail(@Param('id') id: string, @Req() req) {
+    await this.paymentsService.sendInvoiceByEmail(
+      id,
+      req.user.id,
+      req.user.role,
+    );
+
+    return {
+      success: true,
+      message: 'Invoice has been generated and sent to your email address',
+      timestamp: new Date().toISOString(),
+    };
   }
 
   @Patch(':id/refund')

@@ -7,8 +7,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard'; // Fix: Use auth guards
+import { Roles } from '../auth/decorators/roles.decorator'; // Fix: Use auth decorators
 import { Role } from '@prisma/client';
 
 import { EmailService } from './email.service';

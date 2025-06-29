@@ -70,10 +70,10 @@
             </div>
             
             <div class="cta-section">
-                <a href="<%= frontendUrl %>/vehicles" class="cta-button">Browse Vehicles</a>
+                <a href="<%= frontendUrl || 'http://localhost:4200' %>/vehicles" class="cta-button">Browse Vehicles</a>
             </div>
             
-            <% if (verificationUrl) { %>
+            <% if (verificationUrl && verificationUrl !== null) { %>
             <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 30px 0; text-align: center;">
                 <h3 style="color: #856404; margin-bottom: 10px;">📧 Verify Your Email</h3>
                 <p style="color: #856404; margin-bottom: 15px;">Please verify your email address to complete your registration.</p>
@@ -83,7 +83,7 @@
         </div>
         
         <div class="footer">
-            <p><strong>Need help?</strong> Contact our support team at <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a></p>
+            <p><strong>Need help?</strong> Contact our support team at <a href="mailto:<%= supportEmail || 'support@carental.com' %>"><%= supportEmail || 'support@carental.com' %></a></p>
             <div class="social-links">
                 <a href="#" style="text-decoration: none;">Facebook</a>
                 <a href="#" style="text-decoration: none;">Twitter</a>

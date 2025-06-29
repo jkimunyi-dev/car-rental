@@ -89,6 +89,8 @@ export interface BookingResponse extends PrismaBooking {
     discountValue: number;
     discountType: string;
   };
+  isModifiable: boolean;
+  isCancellable: boolean;
 }
 
 // Remove BookingResponseDto and use BookingResponse everywhere
@@ -106,6 +108,7 @@ export interface IBookingSearchOptions {
   startDate?: string;
   endDate?: string;
   userRole?: Role;
+  isPublic?: boolean; // NEW: Flag to indicate public access
 }
 
 /**
@@ -189,13 +192,6 @@ export interface IBookingAvailability {
     startDate: string,
     endDate: string,
   ): Promise<IBookingAvailabilityResult>;
-
-  checkVehicleAvailability(
-    vehicleId: string,
-    startDate: Date,
-    endDate: Date,
-    excludeBookingId?: string,
-  ): Promise<void>;
 }
 
 /**
@@ -211,26 +207,16 @@ export interface IBookingPricing {
     isHourlyBooking?: boolean,
     couponCode?: string,
   ): Promise<PricingBreakdownDto>;
-
-  calculatePricing(
-    vehicle: any,
-    startDate: Date,
-    endDate: Date,
-    startTime?: string,
-    endTime?: string,
-    isHourlyBooking?: boolean,
-    couponCode?: string,
-  ): Promise<PricingBreakdownDto>;
 }
 
 /**
- * Complete Booking Service Interface
+ * Complete Booking Service Interface - Only expose public methods
  */
 export interface IBookingService
   extends IBookingOperations,
     IBookingAvailability,
     IBookingPricing {
-  // Add any additional methods specific to the service
+  // Add any additional public methods specific to the service
 }
 
 /**

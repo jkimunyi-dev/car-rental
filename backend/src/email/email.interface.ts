@@ -78,6 +78,7 @@ export interface PaymentReceiptContext {
   payment: PaymentWithDetails;
   booking: BookingWithDetails;
   receiptUrl?: string;
+  attachments?: EmailAttachment[]; // Add this field
 }
 
 export interface PaymentFailedContext {

@@ -1,19 +1,7 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
-import {
-  BookingResponse,
-  IBookingService,
-  IBookingSearchOptions,
-  IBookingSearchResult,
-  IBookingAvailabilityResult,
-  ICouponValidationResult,
-} from './booking.interface';
+import { BookingStatus, VehicleStatus, Role } from '@prisma/client';
 import {
   CreateBookingDto,
   UpdateBookingDto,
@@ -21,8 +9,14 @@ import {
   CancelBookingDto,
   PricingBreakdownDto,
 } from './dto/create-booking.dto';
-import { Role, VehicleStatus, BookingStatus } from '@prisma/client';
-import { differenceInHours, isBefore, isAfter } from 'date-fns';
+import {
+  IBookingService,
+  IBookingSearchOptions,
+  IBookingSearchResult,
+  IBookingAvailabilityResult,
+  ICouponValidationResult,
+  BookingResponse,
+} from './booking.interface';
 
 @Injectable()
 export class BookingsService implements IBookingService {
@@ -55,7 +49,7 @@ export class BookingsService implements IBookingService {
     this.validateBookingDates(startDate, endDate, startTime, endTime);
 
     // Check vehicle availability
-    await this.checkVehicleAvailability(vehicleId, startDate, endDate);
+    await this.checkVehicleAvailabilityInternal(vehicleId, startDate, endDate);
 
     // Get vehicle details for pricing
     const vehicle = await this.prisma.vehicle.findUnique({
@@ -71,7 +65,7 @@ export class BookingsService implements IBookingService {
     }
 
     // Calculate pricing
-    const pricing = await this.calculatePricing(
+    const pricing = await this.calculatePricingInternal(
       vehicle,
       startDate,
       endDate,
@@ -163,12 +157,12 @@ export class BookingsService implements IBookingService {
     // Send booking confirmation email
     await this.emailService.sendBookingConfirmation({
       user: booking.user,
-      booking: booking as any, // Type assertion for email context
+      booking: booking as any,
       supportUrl: `${process.env.FRONTEND_URL}/support`,
       policyUrl: `${process.env.FRONTEND_URL}/policies`,
     });
 
-    return this.formatBookingResponse(booking);
+    return this.enhanceBookingResponse(booking);
   }
 
   async findAll(options: IBookingSearchOptions): Promise<IBookingSearchResult> {
@@ -180,6 +174,8 @@ export class BookingsService implements IBookingService {
       vehicleId,
       startDate,
       endDate,
+      userRole,
+      isPublic = false,
     } = options;
     const skip = (page - 1) * limit;
 
@@ -192,12 +188,19 @@ export class BookingsService implements IBookingService {
     if (startDate || endDate) {
       where.AND = [];
       if (startDate) {
-        where.AND.push({ startDate: { gte: new Date(startDate) } });
+        where.AND.push({
+          startDate: { gte: new Date(startDate) },
+        });
       }
       if (endDate) {
-        where.AND.push({ endDate: { lte: new Date(endDate) } });
+        where.AND.push({
+          endDate: { lte: new Date(endDate) },
+        });
       }
     }
+
+    // Define what data to include based on whether it's a public request
+    const includeOptions = this.getIncludeOptions(isPublic, userRole);
 
     const [bookings, total] = await Promise.all([
       this.prisma.booking.findMany({
@@ -205,46 +208,13 @@ export class BookingsService implements IBookingService {
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
-          vehicle: {
-            select: {
-              id: true,
-              make: true,
-              model: true,
-              year: true,
-              licensePlate: true,
-              images: true,
-              category: true,
-              location: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-              phone: true,
-              address: true,
-              city: true,
-              country: true,
-            },
-          },
-          coupon: {
-            select: {
-              code: true,
-              discountValue: true,
-              discountType: true,
-            },
-          },
-          payment: true,
-        },
+        include: includeOptions,
       }),
       this.prisma.booking.count({ where }),
     ]);
 
     return {
-      data: bookings.map(this.formatBookingResponse),
+      data: bookings.map(booking => this.enhanceBookingResponse(booking, userRole, isPublic)),
       meta: {
         total,
         page,
@@ -259,54 +229,26 @@ export class BookingsService implements IBookingService {
     userId?: string,
     userRole?: Role,
   ): Promise<BookingResponse> {
+    const isPublic = !userId;
+    const includeOptions = this.getIncludeOptions(isPublic, userRole);
+
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: {
-        vehicle: {
-          select: {
-            id: true,
-            make: true,
-            model: true,
-            year: true,
-            licensePlate: true,
-            images: true,
-            category: true,
-            location: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            address: true,
-            city: true,
-            country: true,
-          },
-        },
-        coupon: {
-          select: {
-            code: true,
-            discountValue: true,
-            discountType: true,
-          },
-        },
-        payment: true,
-      },
+      include: includeOptions,
     });
 
     if (!booking) {
       throw new NotFoundException('Booking not found');
     }
 
-    // Check access permissions
-    if (userRole === Role.CUSTOMER && booking.userId !== userId) {
-      throw new ForbiddenException('You can only view your own bookings');
+    // For authenticated users, check if they can access this booking
+    if (!isPublic) {
+      if (userRole === Role.CUSTOMER && booking.userId !== userId) {
+        throw new ForbiddenException('You can only view your own bookings');
+      }
     }
 
-    return this.formatBookingResponse(booking);
+    return this.enhanceBookingResponse(booking, userRole, isPublic);
   }
 
   async update(
@@ -315,99 +257,30 @@ export class BookingsService implements IBookingService {
     userId: string,
     userRole: Role,
   ): Promise<BookingResponse> {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id },
-      include: { vehicle: true, user: true, payment: true, coupon: true },
-    });
+    const booking = await this.findOne(id, userId, userRole);
 
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
+    // Check if booking is modifiable
+    if (!this.isBookingModifiable(booking)) {
+      throw new BadRequestException('Booking cannot be modified in its current state');
     }
 
-    // Check permissions
+    // Customers can only modify their own bookings
     if (userRole === Role.CUSTOMER && booking.userId !== userId) {
       throw new ForbiddenException('You can only modify your own bookings');
     }
 
-    // Check if booking is modifiable
-    if (!this.isBookingModifiable(booking)) {
-      throw new BadRequestException(
-        'Booking cannot be modified in its current state',
-      );
-    }
-
-    const updateData: any = {};
-    let recalculatePricing = false;
-
-    // Handle date changes
+    // If dates are being updated, validate them and check availability
     if (updateBookingDto.startDate || updateBookingDto.endDate) {
-      const newStartDate = updateBookingDto.startDate
-        ? new Date(updateBookingDto.startDate)
-        : booking.startDate;
-      const newEndDate = updateBookingDto.endDate
-        ? new Date(updateBookingDto.endDate)
-        : booking.endDate;
+      const startDate = updateBookingDto.startDate ? new Date(updateBookingDto.startDate) : booking.startDate;
+      const endDate = updateBookingDto.endDate ? new Date(updateBookingDto.endDate) : booking.endDate;
 
-      this.validateBookingDates(newStartDate, newEndDate);
-
-      // Check availability for new dates (excluding current booking)
-      await this.checkVehicleAvailability(
-        booking.vehicleId,
-        newStartDate,
-        newEndDate,
-        id,
-      );
-
-      updateData.startDate = newStartDate;
-      updateData.endDate = newEndDate;
-      recalculatePricing = true;
-    }
-
-    // Handle time changes
-    if (updateBookingDto.startTime !== undefined) {
-      updateData.startTime = updateBookingDto.startTime;
-      recalculatePricing = true;
-    }
-    if (updateBookingDto.endTime !== undefined) {
-      updateData.endTime = updateBookingDto.endTime;
-      recalculatePricing = true;
-    }
-
-    // Handle location changes
-    if (updateBookingDto.pickupLocation) {
-      updateData.pickupLocation = updateBookingDto.pickupLocation;
-    }
-    if (updateBookingDto.dropoffLocation !== undefined) {
-      updateData.dropoffLocation = updateBookingDto.dropoffLocation;
-    }
-    if (updateBookingDto.notes !== undefined) {
-      updateData.notes = updateBookingDto.notes;
-    }
-
-    // Recalculate pricing if dates/times changed
-    if (recalculatePricing) {
-      const pricing = await this.calculatePricing(
-        booking.vehicle,
-        updateData.startDate || booking.startDate,
-        updateData.endDate || booking.endDate,
-        updateData.startTime || booking.startTime,
-        updateData.endTime || booking.endTime,
-        !!booking.totalHours,
-      );
-
-      Object.assign(updateData, {
-        totalDays: pricing.totalDays,
-        totalHours: pricing.totalHours,
-        subtotal: pricing.subtotal,
-        taxes: pricing.taxes,
-        fees: pricing.fees,
-        totalAmount: pricing.totalAmount - booking.discount,
-      });
+      this.validateBookingDates(startDate, endDate, updateBookingDto.startTime, updateBookingDto.endTime);
+      await this.checkVehicleAvailabilityInternal(booking.vehicleId, startDate, endDate, id);
     }
 
     const updatedBooking = await this.prisma.booking.update({
       where: { id },
-      data: updateData,
+      data: updateBookingDto,
       include: {
         vehicle: {
           select: {
@@ -444,7 +317,7 @@ export class BookingsService implements IBookingService {
       },
     });
 
-    return this.formatBookingResponse(updatedBooking);
+    return this.enhanceBookingResponse(updatedBooking, userRole);
   }
 
   async updateStatus(
@@ -454,7 +327,10 @@ export class BookingsService implements IBookingService {
   ): Promise<BookingResponse> {
     const booking = await this.prisma.booking.findUnique({
       where: { id },
-      include: { vehicle: true, user: true, payment: true, coupon: true },
+      include: {
+        user: true,
+        vehicle: true,
+      },
     });
 
     if (!booking) {
@@ -462,52 +338,14 @@ export class BookingsService implements IBookingService {
     }
 
     // Validate status transition
-    this.validateStatusTransition(
-      booking.status,
-      statusUpdateDto.status,
-      userRole,
-    );
-
-    const updateData: any = {
-      status: statusUpdateDto.status,
-      updatedAt: new Date(),
-    };
-
-    // Handle specific status changes
-    switch (statusUpdateDto.status) {
-      case BookingStatus.CONFIRMED:
-        await this.prisma.vehicle.update({
-          where: { id: booking.vehicleId },
-          data: { status: VehicleStatus.RENTED },
-        });
-        break;
-      case BookingStatus.ACTIVE:
-        await this.prisma.vehicle.update({
-          where: { id: booking.vehicleId },
-          data: { status: VehicleStatus.RENTED },
-        });
-        break;
-      case BookingStatus.COMPLETED:
-        await this.prisma.vehicle.update({
-          where: { id: booking.vehicleId },
-          data: { status: VehicleStatus.AVAILABLE },
-        });
-        break;
-      case BookingStatus.CANCELLED:
-      case BookingStatus.REJECTED:
-        await this.prisma.vehicle.update({
-          where: { id: booking.vehicleId },
-          data: { status: VehicleStatus.AVAILABLE },
-        });
-        if (statusUpdateDto.reason) {
-          updateData.cancellationReason = statusUpdateDto.reason;
-        }
-        break;
-    }
+    this.validateStatusTransition(booking.status, statusUpdateDto.status, userRole);
 
     const updatedBooking = await this.prisma.booking.update({
       where: { id },
-      data: updateData,
+      data: {
+        status: statusUpdateDto.status,
+        cancellationReason: statusUpdateDto.reason,
+      },
       include: {
         vehicle: {
           select: {
@@ -544,7 +382,15 @@ export class BookingsService implements IBookingService {
       },
     });
 
-    return this.formatBookingResponse(updatedBooking);
+    // Update vehicle status based on booking status
+    if (statusUpdateDto.status === BookingStatus.COMPLETED || statusUpdateDto.status === BookingStatus.CANCELLED) {
+      await this.prisma.vehicle.update({
+        where: { id: booking.vehicleId },
+        data: { status: VehicleStatus.AVAILABLE },
+      });
+    }
+
+    return this.enhanceBookingResponse(updatedBooking, userRole);
   }
 
   async cancel(
@@ -553,54 +399,25 @@ export class BookingsService implements IBookingService {
     userId: string,
     userRole: Role,
   ): Promise<BookingResponse> {
-    const booking = await this.prisma.booking.findUnique({
-      where: { id },
-      include: {
-        vehicle: true,
-        payment: true,
-        user: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-            address: true,
-            city: true,
-            country: true,
-          },
-        },
-        coupon: true,
-      },
-    });
+    const booking = await this.findOne(id, userId, userRole);
 
-    if (!booking) {
-      throw new NotFoundException('Booking not found');
+    // Check if booking is cancellable
+    if (!this.isBookingCancellable(booking)) {
+      throw new BadRequestException('Booking cannot be cancelled in its current state');
     }
 
-    // Check permissions
+    // Customers can only cancel their own bookings
     if (userRole === Role.CUSTOMER && booking.userId !== userId) {
       throw new ForbiddenException('You can only cancel your own bookings');
     }
 
-    // Check if booking is cancellable
-    if (!this.isBookingCancellable(booking)) {
-      throw new BadRequestException(
-        'Booking cannot be cancelled in its current state',
-      );
-    }
-
-    // Calculate cancellation fees based on timing
     const cancellationFee = this.calculateCancellationFee(booking);
-    const refundAmount = booking.totalAmount - cancellationFee;
 
-    // Update booking status
     const updatedBooking = await this.prisma.booking.update({
       where: { id },
       data: {
         status: BookingStatus.CANCELLED,
         cancellationReason: cancelBookingDto.cancellationReason,
-        updatedAt: new Date(),
       },
       include: {
         vehicle: {
@@ -638,28 +455,30 @@ export class BookingsService implements IBookingService {
       },
     });
 
-    // Return vehicle to available status
+    // Update vehicle status
     await this.prisma.vehicle.update({
       where: { id: booking.vehicleId },
       data: { status: VehicleStatus.AVAILABLE },
     });
 
-    // Handle refund if requested and payment exists
-    if (cancelBookingDto.requestRefund && booking.payment && refundAmount > 0) {
-      // Implement refund logic here
-      await this.processRefund(booking.payment.id, refundAmount);
+    // Process refund if requested and applicable
+    if (cancelBookingDto.requestRefund && booking.payment) {
+      const refundAmount = booking.totalAmount - cancellationFee;
+      if (refundAmount > 0) {
+        await this.processRefund(booking.payment.id, refundAmount);
+      }
     }
 
     // Send cancellation email
     await this.emailService.sendBookingCancellation({
-      user: booking.user,
-      booking: updatedBooking as any, // Type assertion for email context
+      user: updatedBooking.user,
+      booking: updatedBooking as any,
       cancellationReason: cancelBookingDto.cancellationReason,
-      refundAmount,
+      refundAmount: booking.totalAmount - cancellationFee,
       refundProcessingDays: 5,
     });
 
-    return this.formatBookingResponse(updatedBooking);
+    return this.enhanceBookingResponse(updatedBooking, userRole);
   }
 
   async checkAvailability(
@@ -667,20 +486,34 @@ export class BookingsService implements IBookingService {
     startDate: string,
     endDate: string,
   ): Promise<IBookingAvailabilityResult> {
-    try {
-      await this.checkVehicleAvailability(
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const conflicts = await this.prisma.booking.findMany({
+      where: {
         vehicleId,
-        new Date(startDate),
-        new Date(endDate),
-      );
-      return { available: true };
-    } catch {
-      // Remove unused error parameter
-      return {
-        available: false,
-        conflicts: [], // You could populate this with actual conflicts
-      };
-    }
+        status: {
+          in: [BookingStatus.CONFIRMED, BookingStatus.ACTIVE, BookingStatus.PENDING],
+        },
+        OR: [
+          {
+            startDate: { lte: end },
+            endDate: { gte: start },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        startDate: true,
+        endDate: true,
+        status: true,
+      },
+    });
+
+    return {
+      available: conflicts.length === 0,
+      conflicts: conflicts.length > 0 ? conflicts : undefined,
+    };
   }
 
   async calculateBookingPrice(
@@ -700,7 +533,7 @@ export class BookingsService implements IBookingService {
       throw new NotFoundException('Vehicle not found');
     }
 
-    const pricing = await this.calculatePricing(
+    return this.calculatePricingInternal(
       vehicle,
       new Date(startDate),
       new Date(endDate),
@@ -709,94 +542,69 @@ export class BookingsService implements IBookingService {
       isHourlyBooking,
       couponCode,
     );
-
-    return pricing;
   }
 
   // Helper methods
-  validateBookingDates(
+  private validateBookingDates(
     startDate: Date,
     endDate: Date,
     startTime?: string,
     endTime?: string,
   ): void {
     const now = new Date();
-
-    if (isBefore(startDate, now)) {
-      throw new BadRequestException('Start date cannot be in the past');
+    
+    if (startDate <= now) {
+      throw new BadRequestException('Start date must be in the future');
     }
 
-    if (isAfter(startDate, endDate)) {
-      throw new BadRequestException('Start date must be before end date');
+    if (endDate <= startDate) {
+      throw new BadRequestException('End date must be after start date');
     }
 
-    // For same-day bookings, validate times
-    if (startDate.toDateString() === endDate.toDateString()) {
-      if (!startTime || !endTime) {
-        throw new BadRequestException(
-          'Times are required for same-day bookings',
-        );
-      }
-      if (startTime >= endTime) {
-        throw new BadRequestException('Start time must be before end time');
+    if (startTime && endTime) {
+      const start = new Date(`${startDate.toDateString()} ${startTime}`);
+      const end = new Date(`${startDate.toDateString()} ${endTime}`);
+      
+      if (end <= start) {
+        throw new BadRequestException('End time must be after start time');
       }
     }
   }
 
-  async checkVehicleAvailability(
+  // Made this method private since it's internal implementation
+  private async checkVehicleAvailabilityInternal(
     vehicleId: string,
     startDate: Date,
     endDate: Date,
     excludeBookingId?: string,
   ): Promise<void> {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-    });
-
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
-    }
-
-    if (!vehicle.isActive) {
-      throw new BadRequestException('Vehicle is not active');
-    }
-
-    // Check for overlapping bookings
-    const whereClause: any = {
+    const where: any = {
       vehicleId,
       status: {
-        in: [
-          BookingStatus.CONFIRMED,
-          BookingStatus.ACTIVE,
-          BookingStatus.PENDING,
-        ],
+        in: [BookingStatus.CONFIRMED, BookingStatus.ACTIVE, BookingStatus.PENDING],
       },
       OR: [
         {
-          AND: [
-            { startDate: { lte: endDate } },
-            { endDate: { gte: startDate } },
-          ],
+          startDate: { lte: endDate },
+          endDate: { gte: startDate },
         },
       ],
     };
 
     if (excludeBookingId) {
-      whereClause.id = { not: excludeBookingId };
+      where.id = { not: excludeBookingId };
     }
 
-    const conflictingBookings = await this.prisma.booking.findMany({
-      where: whereClause,
+    const conflictingBooking = await this.prisma.booking.findFirst({
+      where,
     });
 
-    if (conflictingBookings.length > 0) {
-      throw new BadRequestException(
-        'Vehicle is not available for the selected dates',
-      );
+    if (conflictingBooking) {
+      throw new BadRequestException('Vehicle is not available for the selected dates');
     }
   }
 
-  async calculatePricing(
+  private async calculatePricingInternal(
     vehicle: any,
     startDate: Date,
     endDate: Date,
@@ -809,38 +617,31 @@ export class BookingsService implements IBookingService {
     let totalHours = 0;
     let basePrice = 0;
 
-    if (isHourlyBooking && startTime && endTime && vehicle.pricePerHour) {
-      // Calculate hours between start and end time
+    if (isHourlyBooking && startTime && endTime) {
       const start = new Date(`${startDate.toDateString()} ${startTime}`);
       const end = new Date(`${endDate.toDateString()} ${endTime}`);
-      totalHours = differenceInHours(end, start);
-      basePrice = totalHours * vehicle.pricePerHour;
+      totalHours = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+      basePrice = (vehicle.pricePerHour || 0) * totalHours;
     } else {
-      // Calculate days
-      totalDays = Math.ceil(
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
-      );
-      if (totalDays === 0) totalDays = 1; // Minimum 1 day
-      basePrice = totalDays * vehicle.pricePerDay;
+      totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      basePrice = vehicle.pricePerDay * totalDays;
     }
 
     const subtotal = basePrice;
     const taxes = subtotal * 0.1; // 10% tax
     const fees = subtotal * 0.05; // 5% service fee
     let discount = 0;
+    let couponDiscount = 0;
 
-    // Apply coupon discount if provided
+    // Apply coupon discount
     if (couponCode) {
-      const couponValidation = await this.validateAndApplyCoupon(
-        couponCode,
-        subtotal,
-      );
-      if (couponValidation) {
-        discount = couponValidation.discountAmount;
+      const coupon = await this.validateAndApplyCoupon(couponCode, subtotal);
+      if (coupon) {
+        couponDiscount = coupon.discountAmount;
       }
     }
 
-    const totalAmount = subtotal + taxes + fees - discount;
+    const totalAmount = subtotal + taxes + fees - discount - couponDiscount;
 
     return {
       basePrice,
@@ -850,13 +651,14 @@ export class BookingsService implements IBookingService {
       taxes,
       fees,
       discount,
-      totalAmount,
+      couponDiscount: couponDiscount > 0 ? couponDiscount : undefined,
+      totalAmount: Math.max(0, totalAmount),
       pricePerDay: vehicle.pricePerDay,
       pricePerHour: vehicle.pricePerHour,
     };
   }
 
-  async validateAndApplyCoupon(
+  private async validateAndApplyCoupon(
     couponCode: string,
     subtotal: number,
   ): Promise<ICouponValidationResult | null> {
@@ -870,20 +672,23 @@ export class BookingsService implements IBookingService {
 
     let discountAmount = 0;
     if (coupon.discountType === 'percentage') {
-      discountAmount = subtotal * (coupon.discountValue / 100);
-      if (coupon.maxDiscount) {
-        discountAmount = Math.min(discountAmount, coupon.maxDiscount);
+      discountAmount = (subtotal * coupon.discountValue) / 100;
+      if (coupon.maxDiscount && discountAmount > coupon.maxDiscount) {
+        discountAmount = coupon.maxDiscount;
       }
     } else {
       discountAmount = coupon.discountValue;
     }
 
-    return { id: coupon.id, discountAmount };
+    return {
+      id: coupon.id,
+      discountAmount,
+    };
   }
 
-  isCouponValid(coupon: any, subtotal: number): boolean {
+  private isCouponValid(coupon: any, subtotal: number): boolean {
     const now = new Date();
-
+    
     return (
       coupon.isActive &&
       coupon.validFrom <= now &&
@@ -893,108 +698,144 @@ export class BookingsService implements IBookingService {
     );
   }
 
-  isBookingModifiable(booking: any): boolean {
-    return [BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(
-      booking.status,
-    );
-  }
-
-  isBookingCancellable(booking: any): boolean {
-    return [BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(
-      booking.status,
-    );
-  }
-
-  calculateCancellationFee(booking: any): number {
+  private isBookingModifiable(booking: any): boolean {
     const now = new Date();
-    const hoursUntilStart = differenceInHours(booking.startDate, now);
+    const startDate = new Date(booking.startDate);
+    
+    return (
+      booking.status === BookingStatus.PENDING &&
+      startDate > now
+    );
+  }
 
-    // Cancellation policy
+  private isBookingCancellable(booking: any): boolean {
+    const now = new Date();
+    const startDate = new Date(booking.startDate);
+    
+    return (
+      [BookingStatus.PENDING, BookingStatus.CONFIRMED].includes(booking.status) &&
+      startDate > now
+    );
+  }
+
+  private calculateCancellationFee(booking: any): number {
+    const now = new Date();
+    const startDate = new Date(booking.startDate);
+    const hoursUntilStart = (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    
     if (hoursUntilStart >= 48) {
       return 0; // Free cancellation
     } else if (hoursUntilStart >= 24) {
-      return booking.totalAmount * 0.1; // 10% fee
-    } else if (hoursUntilStart >= 2) {
       return booking.totalAmount * 0.25; // 25% fee
     } else {
       return booking.totalAmount * 0.5; // 50% fee
     }
   }
 
-  validateStatusTransition(
+  private validateStatusTransition(
     currentStatus: BookingStatus,
     newStatus: BookingStatus,
     userRole: Role,
   ): void {
-    // Implement status transition validation logic
-    // This is a simplified version - you can expand based on your business rules
-    const validTransitions: Record<BookingStatus, BookingStatus[]> = {
-      [BookingStatus.PENDING]: [
-        BookingStatus.CONFIRMED,
-        BookingStatus.REJECTED,
-        BookingStatus.CANCELLED,
-      ],
-      [BookingStatus.CONFIRMED]: [
-        BookingStatus.ACTIVE,
-        BookingStatus.CANCELLED,
-      ],
+    const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
+      [BookingStatus.PENDING]: [BookingStatus.CONFIRMED, BookingStatus.REJECTED, BookingStatus.CANCELLED],
+      [BookingStatus.CONFIRMED]: [BookingStatus.ACTIVE, BookingStatus.CANCELLED],
       [BookingStatus.ACTIVE]: [BookingStatus.COMPLETED],
-      [BookingStatus.COMPLETED]: [],
-      [BookingStatus.CANCELLED]: [],
-      [BookingStatus.REJECTED]: [],
+      [BookingStatus.COMPLETED]: [], // No transitions allowed
+      [BookingStatus.CANCELLED]: [], // No transitions allowed
+      [BookingStatus.REJECTED]: [], // No transitions allowed
     };
 
-    if (!validTransitions[currentStatus]?.includes(newStatus)) {
-      throw new BadRequestException(
-        `Cannot transition from ${currentStatus} to ${newStatus}`,
-      );
+    if (!allowedTransitions[currentStatus].includes(newStatus)) {
+      throw new BadRequestException(`Cannot transition from ${currentStatus} to ${newStatus}`);
     }
 
-    // Role-based restrictions - Fix the type check
-    if (
-      userRole === Role.CUSTOMER &&
-      (newStatus === BookingStatus.CONFIRMED ||
-        newStatus === BookingStatus.REJECTED)
-    ) {
-      throw new ForbiddenException(
-        'Only admins can confirm or reject bookings',
-      );
+    // Additional role-based restrictions - FIXED: Use proper BookingStatus enum values
+    if (userRole === Role.AGENT) {
+      const agentAllowedTransitions: BookingStatus[] = [BookingStatus.ACTIVE, BookingStatus.COMPLETED];
+      if (!agentAllowedTransitions.includes(newStatus)) {
+        throw new ForbiddenException('Agents can only mark bookings as active or completed');
+      }
     }
   }
 
-  async processRefund(paymentId: string, amount: number): Promise<void> {
+  private async processRefund(paymentId: string, amount: number): Promise<void> {
     // Implement refund logic here
-    // This would typically involve calling a payment service
-    console.log(`Processing refund of $${amount} for payment ${paymentId}`);
+    // This would integrate with your payment provider
+    console.log(`Processing refund of ${amount} for payment ${paymentId}`);
   }
 
-  formatBookingResponse = (booking: any): BookingResponse => {
+  private getIncludeOptions(isPublic: boolean, userRole?: Role) {
+    if (isPublic) {
+      // For public access, only include basic vehicle info and no user data
+      return {
+        vehicle: {
+          select: {
+            id: true,
+            make: true,
+            model: true,
+            year: true,
+            category: true,
+            location: true,
+          },
+        },
+      };
+    }
+
+    // For authenticated users, include full data
     return {
-      ...booking,
-      user: booking.user
-        ? {
-            id: booking.user.id,
-            firstName: booking.user.firstName,
-            lastName: booking.user.lastName,
-            email: booking.user.email,
-            phone: booking.user.phone,
-            address: booking.user.address,
-            city: booking.user.city,
-            country: booking.user.country,
-          }
-        : undefined,
-      vehicle: booking.vehicle
-        ? {
-            id: booking.vehicle.id,
-            make: booking.vehicle.make,
-            model: booking.vehicle.model,
-            year: booking.vehicle.year,
-            licensePlate: booking.vehicle.licensePlate,
-            images: booking.vehicle.images,
-            category: booking.vehicle.category,
-            location: booking.vehicle.location,
-          }
-        : undefined,
+      vehicle: {
+        select: {
+          id: true,
+          make: true,
+          model: true,
+          year: true,
+          licensePlate: true,
+          images: true,
+          category: true,
+          location: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          phone: true,
+          address: true,
+          city: true,
+          country: true,
+        },
+      },
+      coupon: {
+        select: {
+          code: true,
+          discountValue: true,
+          discountType: true,
+        },
+      },
+      payment: true,
     };
-  };
+  }
+
+  private enhanceBookingResponse(booking: any, userRole?: Role, isPublic = false): BookingResponse {
+    const response: BookingResponse = {
+      ...booking,
+      isModifiable: !isPublic && this.isBookingModifiable(booking),
+      isCancellable: !isPublic && this.isBookingCancellable(booking),
+    };
+
+    // For public access, remove sensitive information
+    if (isPublic) {
+      // Remove user information completely for public access
+      delete response.user;
+      // Remove sensitive booking details
+      delete response.notes;
+      delete response.cancellationReason;
+      // Only show basic status and vehicle info
+    }
+
+    return response;
+  }
 }

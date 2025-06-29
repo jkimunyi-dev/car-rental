@@ -19,6 +19,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -26,10 +27,13 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator';
-import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator'; // Fix: Use auth decorators
 import { Role } from '@prisma/client';
+import { RolesGuard } from '../auth/guards/roles.guard'; // Fix: Use auth guards
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateAgentDto } from './dto/create-agent.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { PaginationDto } from '../common/dto/api-response.dto';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -48,6 +52,19 @@ export class UsersController {
   })
   async create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto);
+  }
+
+  @Post('create-agent')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Create a new agent user (Admin only)' })
+  @ApiBody({ type: CreateAgentDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Agent user created successfully',
+    type: UserResponseDto,
+  })
+  async createAgent(@Body() createAgentDto: CreateAgentDto) {
+    return this.usersService.createAgent(createAgentDto);
   }
 
   @Get()
@@ -162,10 +179,7 @@ export class UsersController {
     description: 'User updated successfully',
     type: UserResponseDto,
   })
-  async update(
-    @Param('id') id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<UserResponseDto> {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(id, updateUserDto);
   }
 
@@ -173,7 +187,7 @@ export class UsersController {
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Delete user by ID (Admin only)' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
+  async remove(@Param('id') id: string) {
     await this.usersService.remove(id);
     return { message: 'User deleted successfully' };
   }
@@ -194,5 +208,22 @@ export class UsersController {
   async deactivateUser(@Param('id') id: string): Promise<{ message: string }> {
     await this.usersService.updateStatus(id, false);
     return { message: 'User deactivated successfully' };
+  }
+
+  @Patch(':id/role')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Update user role (Admin only)' })
+  async updateUserRole(
+    @Param('id') userId: string,
+    @Body() updateRoleDto: UpdateUserRoleDto,
+  ) {
+    return this.usersService.updateUserRole(userId, updateRoleDto.role);
+  }
+
+  @Get('agents')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Get all agent users' })
+  async getAgents(@Query() query: PaginationDto) {
+    return this.usersService.getUsersByRole(Role.AGENT, query);
   }
 }

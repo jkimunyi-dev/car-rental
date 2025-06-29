@@ -1,0 +1,342 @@
+### Variables
+@baseUrl = http://localhost:3000/api
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTkxOTg3LCJleHAiOjE3NTExOTU1ODd9.BOA4qiL-QhI_jnDyGfzIdvqB2MTzVp3BVm5Tro8na6E
+@refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQwNzU4LCJleHAiOjE3NTE3NDU1NTh9.3965EjoBymK5TicTxGp5BDOuGMnL0H2m3tSjr4BKcVM
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTkwMDIzLCJleHAiOjE3NTExOTM2MjN9.ItY8XnKfVXsnGl-vUI67xh9Ma3TTAbYNI9LA3mMtnL0
+@agentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoaHNwMHEwMDAwOXp4bzBxOTBidTZlIiwiaWF0IjoxNzUxMTkwOTQ0LCJleHAiOjE3NTExOTQ1NDR9.qDRnkJyPbGk8eQGv1Vin_iCxs10-LuMMfAnzbjZCdVY
+@vehicleId = cmchi3ljd000d9zxo1p5kupry
+
+### ========== SETUP: CREATE VEHICLE FOR TESTING ==========
+
+### Create a test vehicle (Admin only)
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "make": "Toyota",
+  "model": "Camry",
+  "year": 2023,
+  "category": "SEDAN",
+  "transmission": "AUTOMATIC",
+  "fuelType": "PETROL",
+  "seats": 5,
+  "doors": 4,
+  "color": "White",
+  "licensePlate": "ABC-123",
+  "vin": "1HGCM82633A123456",
+  "pricePerDay": 50.00,
+  "pricePerHour": 8.00,
+  "location": "Nairobi",
+  "description": "Comfortable sedan for city driving",
+  "features": ["Air Conditioning", "GPS", "Bluetooth"]
+}
+
+### Create another test vehicle
+POST {{baseUrl}}/vehicles
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "make": "Hyundai",
+  "model": "Tucson",
+  "year": 2022,
+  "category": "SUV",
+  "transmission": "AUTOMATIC",
+  "fuelType": "PETROL",
+  "seats": 7,
+  "doors": 4,
+  "color": "Black",
+  "licensePlate": "XYZ-789",
+  "vin": "1HGCM82633A789012",
+  "pricePerDay": 75.00,
+  "pricePerHour": 12.00,
+  "location": "Nairobi",
+  "description": "Family SUV with spacious interior",
+  "features": ["Air Conditioning", "GPS", "Bluetooth", "Backup Camera"]
+}
+
+### ========== PUBLIC BOOKING AVAILABILITY TESTS (NO AUTH REQUIRED) ==========
+
+### Check vehicle availability - Available dates (PUBLIC)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02
+
+### Check vehicle availability - Different date range (PUBLIC)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2025-01-05&endDate=2025-01-08
+
+### Check availability with invalid vehicle ID (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/check-availability/invalid-vehicle-id?startDate=2024-12-30&endDate=2025-01-02
+
+### Check availability with missing dates (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}
+
+### Check availability with invalid date format (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=invalid-date&endDate=2025-01-02
+
+### ========== AUTHENTICATED BOOKING AVAILABILITY TESTS ==========
+
+### Check vehicle availability - Available dates (AUTHENTICATED)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02
+Authorization: Bearer {{accessToken}}
+
+### ========== PUBLIC BOOKING PRICE CALCULATION TESTS (NO AUTH REQUIRED) ==========
+
+### Calculate booking price - Daily booking (PUBLIC)
+GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02
+
+### Calculate price with hourly booking (PUBLIC)
+GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endDate=2024-12-30&startTime=09:00&endTime=17:00&isHourlyBooking=true
+
+### Calculate price with coupon code (PUBLIC)
+GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02&couponCode=SAVE10
+
+### Calculate price with missing dates (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}
+
+### Calculate price with invalid vehicle ID (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/calculate-price/invalid-vehicle-id?startDate=2024-12-30&endDate=2025-01-02
+
+### ========== AUTHENTICATED BOOKING PRICE CALCULATION TESTS ==========
+
+### Calculate booking price - Daily booking (AUTHENTICATED)
+GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02
+Authorization: Bearer {{accessToken}}
+
+### ========== CREATE BOOKING TESTS (AUTHENTICATION REQUIRED) ==========
+
+### Create a valid booking (REQUIRES AUTH)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-10-30",
+  "endDate": "2025-12-02",
+  "pickupLocation": "Nairobi CBD",
+  "dropoffLocation": "Nairobi CBD",
+  "notes": "Need GPS and child safety seat",
+  "isHourlyBooking": false
+}
+
+### Create hourly booking
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2026-12-09",
+  "endDate": "2026-12-10",
+  "startTime": "09:00",
+  "endTime": "17:00",
+  "pickupLocation": "Nairobi Airport",
+  "dropoffLocation": "Nairobi Airport",
+  "notes": "Airport pickup and drop-off",
+  "isHourlyBooking": true
+}
+
+### Create booking with coupon code
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-01-10",
+  "endDate": "2025-01-13",
+  "pickupLocation": "Westlands",
+  "dropoffLocation": "Karen",
+  "couponCode": "SAVE10",
+  "notes": "Weekend getaway",
+  "isHourlyBooking": false
+}
+
+### Create booking without authentication (should fail)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-01-15",
+  "endDate": "2025-01-18",
+  "pickupLocation": "Nairobi CBD"
+}
+
+### Create booking with invalid vehicle ID (should fail)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "invalid-vehicle-id",
+  "startDate": "2025-01-15",
+  "endDate": "2025-01-18",
+  "pickupLocation": "Nairobi CBD"
+}
+
+### Create booking with missing required fields (should fail)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-01-15"
+}
+
+### Create booking with invalid date format (should fail)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "invalid-date",
+  "endDate": "2025-01-18",
+  "pickupLocation": "Nairobi CBD"
+}
+
+### Create booking with end date before start date (should fail)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-01-18",
+  "endDate": "2025-01-15",
+  "pickupLocation": "Nairobi CBD"
+}
+
+### ========== PUBLIC GET BOOKINGS TESTS (NO AUTH REQUIRED - LIMITED DATA) ==========
+
+### Get all bookings (PUBLIC - should show limited data)
+GET {{baseUrl}}/bookings
+
+### Get bookings with pagination (PUBLIC)
+GET {{baseUrl}}/bookings?page=1&limit=5
+
+### Get bookings filtered by status (PUBLIC)
+GET {{baseUrl}}/bookings?status=CONFIRMED
+
+### Get bookings filtered by vehicle (PUBLIC)
+GET {{baseUrl}}/bookings?vehicleId={{vehicleId}}
+
+### Get bookings filtered by date range (PUBLIC)
+GET {{baseUrl}}/bookings?startDate=2024-12-01&endDate=2025-01-31
+
+### ========== AUTHENTICATED GET BOOKINGS TESTS (FULL DATA ACCESS) ==========
+
+### Get all bookings (ADMIN - full data access)
+GET {{baseUrl}}/bookings
+Authorization: Bearer {{adminToken}}
+
+### Get bookings with pagination (AUTHENTICATED)
+GET {{baseUrl}}/bookings?page=1&limit=5
+Authorization: Bearer {{accessToken}}
+
+### Get bookings filtered by status (AUTHENTICATED)
+GET {{baseUrl}}/bookings?status=PENDING
+Authorization: Bearer {{accessToken}}
+
+### Get my bookings (Customer view - REQUIRES AUTH)
+GET {{baseUrl}}/bookings/my-bookings
+Authorization: Bearer {{accessToken}}
+
+### Get my bookings without auth (should fail)
+GET {{baseUrl}}/bookings/my-bookings
+
+### ========== PUBLIC GET SINGLE BOOKING TESTS (LIMITED DATA) ==========
+
+### Get booking by ID (PUBLIC - limited data, use actual booking ID)
+GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+
+### Get booking with invalid ID (should fail - PUBLIC)
+GET {{baseUrl}}/bookings/invalid-booking-id
+
+### ========== AUTHENTICATED GET SINGLE BOOKING TESTS (FULL DATA) ==========
+
+### Get booking by ID (AUTHENTICATED - full data access)
+GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+Authorization: Bearer {{accessToken}}
+
+### Get booking with admin token (ADMIN - full access)
+GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+Authorization: Bearer {{adminToken}}
+
+### ========== UPDATE BOOKING TESTS (AUTHENTICATION REQUIRED) ==========
+
+### Update booking details (REQUIRES AUTH)
+PATCH {{baseUrl}}/bookings/cmchj6o3d00019zjatwtob728
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "notes": "Updated notes - need pickup at different location",
+  "pickupLocation": "Nairobi Airport"
+}
+
+### Update booking without authentication (should fail)
+PATCH {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+Content-Type: application/json
+
+{
+  "notes": "This should fail"
+}
+
+### ========== BOOKING STATUS UPDATE TESTS (ADMIN/AGENT ONLY) ==========
+
+### Approve booking (Admin - REQUIRES AUTH)
+PATCH {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE/status
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "status": "CONFIRMED",
+  "reason": "All requirements met"
+}
+
+### Try to update status without auth (should fail)
+PATCH {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE/status
+Content-Type: application/json
+
+{
+  "status": "CONFIRMED"
+}
+
+### ========== CANCEL BOOKING TESTS (AUTHENTICATION REQUIRED) ==========
+
+### Cancel booking (REQUIRES AUTH)
+POST {{baseUrl}}/bookings/cmchj6o3d00019zjatwtob728/cancel
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "cancellationReason": "Plans changed",
+  "requestRefund": true
+}
+
+### Try to cancel booking without auth (should fail)
+POST {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE/cancel
+Content-Type: application/json
+
+{
+  "cancellationReason": "This should fail"
+}
+
+### ========== COMPARISON TESTS: PUBLIC VS AUTHENTICATED ACCESS ==========
+
+### Compare: Get bookings as public user (limited data)
+GET {{baseUrl}}/bookings?limit=2
+
+### Compare: Get same bookings as authenticated user (full data)
+GET {{baseUrl}}/bookings?limit=2
+Authorization: Bearer {{accessToken}}
+
+### Compare: Get specific booking as public user (limited data)
+GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+
+### Compare: Get same booking as authenticated user (full data)
+GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
+Authorization: Bearer {{accessToken}}

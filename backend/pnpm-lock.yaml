@@ -41,9 +41,6 @@ importers:
       '@prisma/client':
         specifier: ^6.10.1
         version: 6.10.1(prisma@6.10.1(typescript@5.8.3))(typescript@5.8.3)
-      '@types/puppeteer':
-        specifier: ^7.0.4
-        version: 7.0.4(typescript@5.8.3)
       axios:
         specifier: ^1.10.0
         version: 1.10.0
@@ -144,6 +141,9 @@ importers:
       '@types/passport-jwt':
         specifier: ^4.0.1
         version: 4.0.1
+      '@types/puppeteer':
+        specifier: ^7.0.4
+        version: 7.0.4(typescript@5.8.3)
       '@types/supertest':
         specifier: ^6.0.0
         version: 6.0.3

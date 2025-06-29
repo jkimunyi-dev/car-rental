@@ -80,10 +80,12 @@ model User {
   updatedAt     DateTime @updatedAt
 
   // Relations
-  bookings      Booking[]
-  reviews       Review[]
-  paymentMethods PaymentMethod[]
-  refreshTokens RefreshToken[]
+  bookings               Booking[]
+  reviews                Review[]
+  paymentMethods         PaymentMethod[]
+  refreshTokens          RefreshToken[]
+  wishlists              Wishlist[]                // Add this
+  wishlistNotifications  WishlistNotification[]    // Add this
 
   @@map("users")
 }
@@ -126,8 +128,10 @@ model Vehicle {
   updatedAt     DateTime        @updatedAt
 
   // Relations
-  bookings      Booking[]
-  reviews       Review[]
+  bookings               Booking[]
+  reviews                Review[]
+  wishlists              Wishlist[]                // Add this
+  wishlistNotifications  WishlistNotification[]    // Add this
 
   @@map("vehicles")
 }
@@ -255,4 +259,38 @@ model SystemSettings {
   updatedAt DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  vehicleId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  // Prevent duplicate wishlist items
+  @@unique([userId, vehicleId])
+  @@map("wishlists")
+}
+
+model WishlistNotification {
+  id            String   @id @default(cuid())
+  userId        String
+  vehicleId     String
+  type          String   // 'availability', 'price_drop'
+  isActive      Boolean  @default(true)
+  lastNotified  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vehicleId, type])
+  @@map("wishlist_notifications")
 }
