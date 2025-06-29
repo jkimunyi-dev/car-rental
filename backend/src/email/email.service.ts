@@ -1,18 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { ConfigService } from '@nestjs/config';
+import { MailerService } from '@nestjs-modules/mailer';
 import { PrismaService } from '../prisma/prisma.service';
-
+import { ConfigService } from '@nestjs/config';
 import {
-  IEmailService,
-  EmailTemplate,
-  EmailPriority,
   EmailJobData,
   BulkEmailData,
   EmailCampaign,
   EmailStats,
+  IEmailService,
+  EmailTemplate,
+  EmailPriority,
   WelcomeEmailContext,
   EmailVerificationContext,
   PasswordResetContext,
@@ -21,282 +20,220 @@ import {
   BookingCancellationContext,
   PaymentReceiptContext,
   PaymentFailedContext,
+  MarketingContext,
+  PromotionalOfferContext,
   ReviewRequestContext,
 } from './email.interface';
 
 @Injectable()
 export class EmailService implements IEmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly frontendUrl: string;
 
   constructor(
+    @InjectQueue('email') private emailQueue: Queue,
     private readonly mailerService: MailerService,
-    @InjectQueue('email') private readonly emailQueue: Queue,
-    private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
-  ) {
-    this.frontendUrl =
-      this.configService.get('FRONTEND_URL') || 'http://localhost:4200';
+    private readonly configService: ConfigService,
+  ) {}
+
+  // Direct email sending method (for immediate sending)
+  async sendEmailDirect(emailData: EmailJobData): Promise<void> {
+    try {
+      const { to, template, context, subject, attachments } = emailData;
+
+      // Enhance context with common variables
+      const enhancedContext = {
+        ...context,
+        supportEmail: this.configService.get('SUPPORT_EMAIL') || 'support@carental.com',
+        frontendUrl: this.configService.get('FRONTEND_URL') || 'http://localhost:4200',
+        // Add bookingUrl if context has booking data
+        bookingUrl: context.booking?.id 
+          ? `${this.configService.get('FRONTEND_URL') || 'http://localhost:4200'}/bookings/${context.booking.id}`
+          : `${this.configService.get('FRONTEND_URL') || 'http://localhost:4200'}/bookings`,
+      };
+
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        template: `./${template}`,
+        context: enhancedContext,
+        attachments,
+      });
+
+      this.logger.log(`Email sent successfully to ${to} with template ${template}`);
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${emailData.to}: ${error.message}`);
+      throw error;
+    }
   }
 
-  /**
-   * Send welcome email to new users
-   */
+  async addEmailToQueue(emailData: EmailJobData): Promise<void> {
+    try {
+      // For critical emails like invoices, send immediately
+      if (emailData.priority === EmailPriority.CRITICAL || 
+          emailData.template === EmailTemplate.PAYMENT_RECEIPT) {
+        await this.sendEmailDirect(emailData);
+        return;
+      }
+
+      // Otherwise, add to queue
+      await this.emailQueue.add('send-email', emailData, {
+        priority: this.getPriorityValue(emailData.priority),
+        delay: emailData.delay || 0,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      });
+
+      this.logger.log(`Email queued for ${emailData.to}`);
+    } catch (error) {
+      this.logger.error(`Failed to queue email: ${error.message}`);
+      // Fallback to direct sending if queue fails
+      await this.sendEmailDirect(emailData);
+    }
+  }
+
+  private getPriorityValue(priority?: EmailPriority): number {
+    switch (priority) {
+      case EmailPriority.CRITICAL:
+        return 1;
+      case EmailPriority.HIGH:
+        return 25;
+      case EmailPriority.NORMAL:
+        return 50;
+      case EmailPriority.LOW:
+        return 100;
+      default:
+        return 50;
+    }
+  }
+
   async sendWelcomeEmail(data: WelcomeEmailContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.WELCOME,
       subject: `Welcome to Car Rental Service, ${data.user.firstName}!`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        supportEmail: this.configService.get('SUPPORT_EMAIL'),
-      },
+      context: data,
       priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+    });
   }
 
-  /**
-   * Send email verification
-   */
   async sendEmailVerification(data: EmailVerificationContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.EMAIL_VERIFICATION,
       subject: 'Verify Your Email Address',
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-      },
+      context: data,
       priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+    });
   }
 
-  /**
-   * Send password reset email
-   */
   async sendPasswordReset(data: PasswordResetContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.PASSWORD_RESET,
       subject: 'Reset Your Password',
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-      },
+      context: data,
       priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+    });
   }
 
-  /**
-   * Send booking confirmation email
-   */
-  async sendBookingConfirmation(
-    data: BookingConfirmationContext,
-  ): Promise<void> {
-    const emailData: EmailJobData = {
+  async sendBookingConfirmation(data: BookingConfirmationContext): Promise<void> {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.BOOKING_CONFIRMATION,
       subject: `Booking Confirmed - ${data.booking.vehicle.make} ${data.booking.vehicle.model}`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        bookingUrl: `${this.frontendUrl}/bookings/${data.booking.id}`,
-      },
+      context: data,
       priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+    });
   }
 
-  /**
-   * Send booking reminder email
-   */
   async sendBookingReminder(data: BookingReminderContext): Promise<void> {
-    const subject =
-      data.reminderType === 'pickup'
-        ? `Reminder: Vehicle Pickup in ${data.hoursUntil} hours`
-        : `Reminder: Vehicle Return Due in ${data.hoursUntil} hours`;
-
-    const emailData: EmailJobData = {
+    const reminderType = data.reminderType === 'pickup' ? 'Pickup' : 'Return';
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.BOOKING_REMINDER,
-      subject,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        bookingUrl: `${this.frontendUrl}/bookings/${data.booking.id}`,
-      },
-      priority: EmailPriority.NORMAL,
-    };
-
-    await this.addEmailToQueue(emailData);
+      subject: `${reminderType} Reminder - ${data.booking.vehicle.make} ${data.booking.vehicle.model}`,
+      context: data,
+      priority: EmailPriority.HIGH,
+    });
   }
 
-  /**
-   * Send booking cancellation email
-   */
-  async sendBookingCancellation(
-    data: BookingCancellationContext,
-  ): Promise<void> {
-    const emailData: EmailJobData = {
+  async sendBookingCancellation(data: BookingCancellationContext): Promise<void> {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.BOOKING_CANCELLATION,
       subject: `Booking Cancelled - ${data.booking.vehicle.make} ${data.booking.vehicle.model}`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        supportEmail: this.configService.get('SUPPORT_EMAIL'),
-      },
+      context: data,
       priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+    });
   }
 
-  /**
-   * Send payment receipt email
-   */
   async sendPaymentReceipt(data: PaymentReceiptContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.PAYMENT_RECEIPT,
-      subject: `Payment Receipt - Booking #${data.booking.id}`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        bookingUrl: `${this.frontendUrl}/bookings/${data.booking.id}`,
-      },
-      priority: EmailPriority.HIGH,
-    };
-
-    await this.addEmailToQueue(emailData);
+      subject: `Payment Receipt - Invoice #${data.payment.id.substring(0, 8).toUpperCase()}`,
+      context: data,
+      priority: EmailPriority.CRITICAL, // Critical for immediate sending
+      attachments: data.attachments,
+    });
   }
 
-  /**
-   * Send payment failed email
-   */
   async sendPaymentFailed(data: PaymentFailedContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.PAYMENT_FAILED,
-      subject: `Payment Failed - Action Required`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-        supportEmail: this.configService.get('SUPPORT_EMAIL'),
-      },
-      priority: EmailPriority.CRITICAL,
-    };
-
-    await this.addEmailToQueue(emailData);
+      subject: 'Payment Failed - Action Required',
+      context: data,
+      priority: EmailPriority.HIGH,
+    });
   }
 
-  /**
-   * Send review request email
-   */
   async sendReviewRequest(data: ReviewRequestContext): Promise<void> {
-    const emailData: EmailJobData = {
+    await this.addEmailToQueue({
       to: data.user.email,
       template: EmailTemplate.REVIEW_REQUEST,
-      subject: `How was your experience with ${data.booking.vehicle.make} ${data.booking.vehicle.model}?`,
-      context: {
-        ...data,
-        frontendUrl: this.frontendUrl,
-      },
-      priority: EmailPriority.LOW,
-      delay: 24 * 60 * 60 * 1000, // 24 hours delay
-    };
-
-    await this.addEmailToQueue(emailData);
+      subject: 'How was your experience?',
+      context: data,
+      priority: EmailPriority.NORMAL,
+    });
   }
 
-  /**
-   * Send bulk emails
-   */
   async sendBulkEmail(data: BulkEmailData): Promise<void> {
     const batchSize = data.batchSize || 100;
     const batches = this.chunkArray(data.recipients, batchSize);
 
     for (const batch of batches) {
-      const batchJobs = batch.map((recipient) => ({
-        to: recipient.email,
-        template: data.template,
-        subject: data.subject,
-        context: {
-          ...data.baseContext,
-          user: recipient,
-          unsubscribeUrl: `${this.frontendUrl}/unsubscribe?email=${recipient.email}`,
-        },
-        priority: data.priority || EmailPriority.LOW,
-      }));
-
-      await Promise.all(batchJobs.map((job) => this.addEmailToQueue(job)));
-
-      // Add delay between batches to avoid overwhelming the email service
-      await this.delay(5000); // 5 seconds
-    }
-  }
-
-  /**
-   * Send marketing campaign
-   */
-  async sendMarketingCampaign(campaign: EmailCampaign): Promise<void> {
-    try {
-      // Get target audience based on filters
-      const recipients = await this.getTargetAudience(campaign.targetAudience);
-
-      const bulkData: BulkEmailData = {
-        recipients: recipients.map((user) => ({
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          userId: user.id,
-        })),
-        template: campaign.template,
-        baseContext: campaign.context,
-        subject: campaign.subject,
-        priority: EmailPriority.LOW,
-        batchSize: 50,
-      };
-
-      await this.sendBulkEmail(bulkData);
-
-      this.logger.log(
-        `Marketing campaign "${campaign.name}" sent to ${recipients.length} recipients`,
+      const batchPromises = batch.map(recipient =>
+        this.addEmailToQueue({
+          to: recipient.email,
+          template: data.template,
+          subject: data.subject,
+          context: {
+            ...data.baseContext,
+            user: {
+              firstName: recipient.firstName,
+              lastName: recipient.lastName,
+              email: recipient.email,
+            },
+          },
+          priority: data.priority,
+        })
       );
-    } catch (error) {
-      this.logger.error(`Failed to send marketing campaign: ${error.message}`);
-      throw error;
+
+      await Promise.all(batchPromises);
     }
   }
 
-  /**
-   * Add email to queue
-   */
-  async addEmailToQueue(data: EmailJobData): Promise<void> {
-    const jobOptions = {
-      priority: this.getPriorityValue(data.priority || EmailPriority.NORMAL),
-      delay: data.delay || 0,
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 2000,
-      },
-    };
-
-    await this.emailQueue.add('send-email', data, jobOptions);
+  async sendMarketingCampaign(campaign: EmailCampaign): Promise<void> {
+    // Implementation for marketing campaigns
+    this.logger.log(`Marketing campaign "${campaign.name}" processing started`);
+    // Add campaign logic here
   }
 
-  /**
-   * Get queue statistics
-   */
   async getQueueStats(): Promise<any> {
     const waiting = await this.emailQueue.getWaiting();
     const active = await this.emailQueue.getActive();
@@ -311,72 +248,24 @@ export class EmailService implements IEmailService {
     };
   }
 
-  /**
-   * Get email statistics
-   */
-  async getEmailStats() // _period: 'day' | 'week' | 'month' = 'week', // Prefix with underscore to indicate intentionally unused
-  : Promise<EmailStats> {
-    // This would typically come from a logging/analytics service
-    // For now, return mock data
+  async getEmailStats(period?: 'day' | 'week' | 'month'): Promise<EmailStats> {
+    // Implementation for email statistics
     return {
-      totalSent: 1500,
-      totalDelivered: 1425,
-      totalFailed: 75,
-      deliveryRate: 95,
-      failureRate: 5,
+      totalSent: 0,
+      totalDelivered: 0,
+      totalFailed: 0,
+      deliveryRate: 0,
+      failureRate: 0,
       byTemplate: {} as any,
       recent: [],
     };
   }
 
-  /**
-   * Private helper methods
-   */
-  private getPriorityValue(priority: EmailPriority): number {
-    const priorities = {
-      [EmailPriority.CRITICAL]: 1,
-      [EmailPriority.HIGH]: 2,
-      [EmailPriority.NORMAL]: 3,
-      [EmailPriority.LOW]: 4,
-    };
-    return priorities[priority];
-  }
-
-  private chunkArray<T>(array: T[], size: number): T[][] {
+  private chunkArray<T>(array: T[], chunkSize: number): T[][] {
     const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
+    for (let i = 0; i < array.length; i += chunkSize) {
+      chunks.push(array.slice(i, i + chunkSize));
     }
     return chunks;
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  private async getTargetAudience(filters: any): Promise<any[]> {
-    const where: any = {};
-
-    if (filters.roles) {
-      where.role = { in: filters.roles };
-    }
-
-    if (filters.isActive !== undefined) {
-      where.isActive = filters.isActive;
-    }
-
-    if (filters.isVerified !== undefined) {
-      where.isVerified = filters.isVerified;
-    }
-
-    return this.prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
   }
 }

@@ -31,6 +31,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
+    // Check if user is verified for protected routes
+    if (!user.isVerified) {
+      throw new UnauthorizedException('Email verification required');
+    }
+
     return user;
   }
 }

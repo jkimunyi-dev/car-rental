@@ -122,7 +122,7 @@ export class CancelBookingDto {
   requestRefund?: boolean;
 }
 
-// Enhanced booking response with pricing details
+// Fixed booking response with optional properties
 export class BookingResponseDto {
   id: string;
   startDate: Date;
@@ -145,15 +145,15 @@ export class BookingResponseDto {
   cancellationReason?: string;
   isModifiable: boolean;
   isCancellable: boolean;
-  vehicle: {
+  vehicle?: {
     id: string;
     make: string;
     model: string;
     year: number;
     licensePlate: string;
-    images: string[];
-    category: string;
-    location: string;
+    images?: string[];
+    category?: string;
+    location?: string;
   };
   user?: {
     id: string;

@@ -11,14 +11,15 @@ import {
   HttpCode,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../common/guards/roles.guard';
-import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Role } from '@prisma/client';
 import { AdminService } from './admin.service';
 import {
   GetAnalyticsDto,
   AdminUserFiltersDto,
-  UpdateUserRoleDto,
+  AdminUpdateUserRoleDto,
   UpdateUserStatusDto,
   BulkUserActionDto,
   AdminBookingFiltersDto,
@@ -63,7 +64,7 @@ export class AdminController {
   @Put('users/:id/role')
   async updateUserRole(
     @Param('id') userId: string,
-    @Body() updateUserRoleDto: UpdateUserRoleDto,
+    @Body() updateUserRoleDto: AdminUpdateUserRoleDto,
   ) {
     const user = await this.adminService.updateUserRole(
       userId,
@@ -193,19 +194,6 @@ export class AdminController {
       success: true,
       message: 'Report generated successfully',
       data: report,
-    };
-  }
-
-  @Get('reports/download')
-  @HttpCode(HttpStatus.OK)
-  async downloadReport(@Query('path') filePath: string) {
-    // This method assumes your AdminService has a downloadReport implementation.
-    // You may want to implement file streaming or buffer return for actual files.
-    const file = await this.adminService.downloadReport(filePath);
-    return {
-      success: true,
-      message: 'Report downloaded successfully',
-      data: file,
     };
   }
 }

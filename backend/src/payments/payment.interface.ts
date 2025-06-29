@@ -165,6 +165,11 @@ export interface IPaymentService {
     userId: string,
     userRole: Role,
   ): Promise<Buffer>;
+  sendInvoiceByEmail(
+    paymentId: string,
+    userId: string,
+    userRole: Role,
+  ): Promise<{ success: boolean; message: string }>; // Add this method
   createPaymentMethod(
     userId: string,
     createPaymentMethodDto: CreatePaymentMethodDto,
@@ -189,4 +194,6 @@ export interface IDarajaService extends IPaymentProvider {
 
 export interface IInvoiceService {
   generateInvoice(paymentId: string): Promise<Buffer>;
+  generateAndSendInvoice(paymentId: string): Promise<void>; // Add this method
+  sendInvoiceByEmail(paymentId: string): Promise<void>;
 }

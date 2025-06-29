@@ -1,22 +1,23 @@
 import {
   Injectable,
-  UnauthorizedException,
   ConflictException,
-  BadRequestException,
+  UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
+import { Role } from '@prisma/client';
+
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
-import { Role } from '@prisma/client';
 import { IAuthService } from './auth.interface';
-import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -40,9 +41,7 @@ export class AuthService implements IAuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException(
-        'User with this email or phone already exists',
-      );
+      throw new ConflictException('User with this email or phone already exists');
     }
 
     // Hash password
@@ -71,17 +70,35 @@ export class AuthService implements IAuthService {
       },
     });
 
-    // Generate tokens
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    // Store verification token in database
+    await this.prisma.systemSettings.create({
+      data: {
+        key: `email_verification_${user.id}`,
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      },
+    });
+
+    // Generate auth tokens
     const tokens = await this.generateTokens(user.id);
 
-    // Send verification email (implement this based on your email service)
+    // Send welcome email with verification URL
     await this.emailService.sendWelcomeEmail({
       user: {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
       },
-      verificationUrl: this.generateVerificationUrl(user.id),
+      verificationUrl: this.generateVerificationUrl(verificationToken),
     });
 
     return {
@@ -119,6 +136,13 @@ export class AuthService implements IAuthService {
     if (!isPasswordValid) {
       await this.recordFailedAttempt(loginDto.email);
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Check if user is verified - NEW CHECK
+    if (!user.isVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email address before logging in. Check your inbox for the verification email.',
+      );
     }
 
     // Reset failed attempts on successful login
@@ -300,32 +324,77 @@ export class AuthService implements IAuthService {
   }
 
   async verifyEmail(token: string): Promise<void> {
-    // Implement email verification logic
+    if (!token) {
+      throw new BadRequestException('Verification token is required');
+    }
+
+    // Hash the provided token to match stored token
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    // Find verification token (implement based on your verification storage)
-    // For now, using system settings
-    const verificationData = await this.prisma.systemSettings.findFirst({
+    // Find all verification tokens and check each one
+    const verificationEntries = await this.prisma.systemSettings.findMany({
       where: {
         key: { startsWith: 'email_verification_' },
-        value: { contains: hashedToken },
       },
     });
 
-    if (!verificationData) {
+    let matchingEntry: any = null;
+    let userId: string = '';
+
+    // Check each entry for matching token
+    for (const entry of verificationEntries) {
+      try {
+        const storedData = JSON.parse(entry.value);
+        if (storedData.token === hashedToken) {
+          matchingEntry = { ...entry, parsedValue: storedData };
+          userId = entry.key.replace('email_verification_', '');
+          break;
+        }
+      } catch (error) {
+        // Skip malformed entries
+        continue;
+      }
+    }
+
+    if (!matchingEntry) {
       throw new BadRequestException('Invalid verification token');
     }
 
-    const userId = verificationData.key.replace('email_verification_', '');
+    // Check if token has expired
+    if (new Date() > new Date(matchingEntry.parsedValue.expiresAt)) {
+      // Clean up expired token
+      await this.prisma.systemSettings.delete({
+        where: { id: matchingEntry.id },
+      });
+      throw new BadRequestException('Verification token has expired');
+    }
 
+    // Verify the user exists and update
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isVerified) {
+      // Clean up token and return success
+      await this.prisma.systemSettings.delete({
+        where: { id: matchingEntry.id },
+      });
+      return; // Email already verified
+    }
+
+    // Update user as verified
     await this.prisma.user.update({
       where: { id: userId },
       data: { isVerified: true },
     });
 
-    // Remove verification token
+    // Remove verification token from database
     await this.prisma.systemSettings.delete({
-      where: { id: verificationData.id },
+      where: { id: matchingEntry.id },
     });
   }
 
@@ -416,13 +485,64 @@ export class AuthService implements IAuthService {
     });
   }
 
-  private generateVerificationUrl(userId: string): string {
-    // Implement your verification URL generation logic
-    return `http://your-frontend.com/verify-email?token=${userId}`;
+  private generateVerificationUrl(verificationToken: string): string {
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
+    return `${frontendUrl}/verify-email?token=${verificationToken}`;
   }
 
   private generateResetUrl(resetToken: string): string {
     // Implement your password reset URL generation logic
     return `http://your-frontend.com/reset-password?token=${resetToken}`;
+  }
+
+  // Add method to resend verification email
+  async resendVerificationEmail(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.isVerified) {
+      throw new BadRequestException('Email is already verified');
+    }
+
+    // Generate new verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    // Update or create verification token in database
+    await this.prisma.systemSettings.upsert({
+      where: { key: `email_verification_${user.id}` },
+      update: {
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        }),
+      },
+      create: {
+        key: `email_verification_${user.id}`,
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        }),
+      },
+    });
+
+    // Send verification email
+    await this.emailService.sendEmailVerification({
+      user: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+      },
+      verificationUrl: this.generateVerificationUrl(verificationToken),
+      expiresIn: '24 hours',
+    });
   }
 }

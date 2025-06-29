@@ -23,6 +23,7 @@ export interface IAuthInterface {
 
   // Email Verification
   verifyEmail(token: string): Promise<void>;
+  resendVerificationEmail(email: string): Promise<void>; // NEW METHOD
 }
 
 /**
@@ -197,6 +198,11 @@ export const AUTH_ERRORS = {
     message: 'Account is deactivated',
     statusCode: 401,
   },
+  EMAIL_NOT_VERIFIED: {
+    code: 'EMAIL_NOT_VERIFIED',
+    message: 'Please verify your email address before logging in',
+    statusCode: 401,
+  }, // NEW ERROR
   USER_EXISTS: {
     code: 'USER_EXISTS',
     message: 'User with this email or phone already exists',
@@ -217,6 +223,11 @@ export const AUTH_ERRORS = {
     message: 'User not found',
     statusCode: 404,
   },
+  EMAIL_ALREADY_VERIFIED: {
+    code: 'EMAIL_ALREADY_VERIFIED',
+    message: 'Email address is already verified',
+    statusCode: 400,
+  }, // NEW ERROR
 } as const;
 
 /**

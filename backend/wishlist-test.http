@@ -1,0 +1,59 @@
+### Variables
+@baseUrl = http://localhost:3000/api
+@accessToken = YOUR_ACCESS_TOKEN_HERE
+
+### ========== WISHLIST TESTS ==========
+
+### Add vehicle to wishlist
+POST {{baseUrl}}/wishlist
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": "cm123456789"
+}
+
+### Get user's wishlist
+GET {{baseUrl}}/wishlist?page=1&limit=10&availableOnly=true
+Authorization: Bearer {{accessToken}}
+
+### Check if vehicle is in wishlist
+GET {{baseUrl}}/wishlist/check/cm123456789
+Authorization: Bearer {{accessToken}}
+
+### Remove vehicle from wishlist
+DELETE {{baseUrl}}/wishlist/cm123456789
+Authorization: Bearer {{accessToken}}
+
+### Set notification for wishlist item
+POST {{baseUrl}}/wishlist/notifications
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "vehicleId": "cm123456789",
+  "type": "availability",
+  "isActive": true
+}
+
+### Share wishlist
+POST {{baseUrl}}/wishlist/share
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "emails": ["friend@example.com", "family@example.com"],
+  "message": "Check out these amazing cars I'm interested in!"
+}
+
+### Get quick booking URL
+GET {{baseUrl}}/wishlist/cm123456789/quick-book
+Authorization: Bearer {{accessToken}}
+
+### Clear entire wishlist
+DELETE {{baseUrl}}/wishlist
+Authorization: Bearer {{accessToken}}
+
+### Get wishlist with filters
+GET {{baseUrl}}/wishlist?availableOnly=true&location=Nairobi&category=SUV&page=1&limit=5
+Authorization: Bearer {{accessToken}}

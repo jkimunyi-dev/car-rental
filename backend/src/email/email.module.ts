@@ -20,17 +20,20 @@ import { PrismaModule } from '../prisma/prisma.module';
         transport: {
           host: configService.get('MAIL_HOST'),
           port: parseInt(configService.get('MAIL_PORT')) || 587,
-          secure: configService.get('MAIL_PORT') === '465',
+          secure: configService.get('MAIL_PORT') === '465', // true for 465, false for other ports
           auth: {
             user: configService.get('MAIL_USER'),
             pass: configService.get('MAIL_PASS'),
+          },
+          tls: {
+            rejectUnauthorized: false, // Add this for Gmail
           },
         },
         defaults: {
           from: `"Car Rental Service" <${configService.get('MAIL_USER')}>`,
         },
         template: {
-          dir: join(__dirname, 'templates'),
+          dir: join(process.cwd(), 'src', 'email', 'templates'),
           adapter: new EjsAdapter({
             inlineCssEnabled: true,
           }),
@@ -38,16 +41,33 @@ import { PrismaModule } from '../prisma/prisma.module';
             strict: false,
           },
         },
+        options: {
+          partials: {
+            dir: join(process.cwd(), 'src', 'email', 'templates'),
+            options: {
+              strict: false,
+            },
+          },
+        },
+      }),
+      inject: [ConfigService],
+    }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        redis: {
+          host: configService.get('REDIS_HOST') || 'localhost',
+          port: parseInt(configService.get('REDIS_PORT')) || 6379,
+          password: configService.get('REDIS_PASSWORD'),
+          retryDelayOnFailover: 100,
+          enableReadyCheck: false,
+          maxRetriesPerRequest: null,
+        },
       }),
       inject: [ConfigService],
     }),
     BullModule.registerQueue({
       name: 'email',
-      redis: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT) || 6379,
-        password: process.env.REDIS_PASSWORD,
-      },
       defaultJobOptions: {
         removeOnComplete: 100,
         removeOnFail: 50,

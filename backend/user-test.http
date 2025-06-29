@@ -1,0 +1,867 @@
+###
+# Car Rental API - User Tests
+# Make sure the server is running on http://localhost:3000
+# NOTE: This test file uses users created in auth-test.http
+###
+
+# Variables
+@baseUrl = http://localhost:3000/api
+@adminEmail = jkkimunyi@gmail.com
+@adminPassword = @_Kimunyi123!
+@testUserEmail = kimunyijimmy@gmail.com
+@testUserPassword = Kimunyi123!
+@secondUserEmail = jkelly911254@gmail.com
+@secondUserPassword = Kelly911254!
+
+# Test tokens (will be set after login)
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQ3OTEzLCJleHAiOjE3NTExNTE1MTN9.u52O9G0DSYmJAZArZ_3l0k6dFG07rQpJ8vTp0ODHquI
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnZ1aGEwMDAwOXo0aTRvcmczNHIxIiwiaWF0IjoxNzUxMTQ3OTQwLCJleHAiOjE3NTExNTE1NDB9.pGhka84P4pE5FOa_YUO5X64dN9LesTIr4g1WTvyUZNs
+@secondUserToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTQ4Njc1LCJleHAiOjE3NTExNTIyNzV9.wF77-d2RE5vPmnTl-VEXkOY55n-NFjVLZUls8_6RCN4
+@userId = cmcgnvuha00009z4i4org34r1
+@secondUserId = cmcgsnnyx00059z9isr5q6a95
+
+###
+# 1. AUTHENTICATION TESTS
+###
+
+### Login as Admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+### Login as Test User (Jimmy)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{testUserEmail}}",
+  "password": "{{testUserPassword}}"
+}
+
+### Login as Second User (Kelly)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{secondUserEmail}}",
+  "password": "{{secondUserPassword}}"
+}
+
+###
+# 2. USER PROFILE TESTS
+###
+
+### Get Current User Profile (Jimmy)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Update User Profile (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy Updated",
+  "lastName": "Kimunyi Updated",
+  "phone": "+254113514113",
+  "dateOfBirth": "2003-08-05",
+  "licenseNumber": "DL123456789",
+  "address": "123 Updated Street, Nairobi",
+  "city": "Nairobi",
+  "country": "Kenya",
+  "zipCode": "00100"
+}
+
+### Get Updated Profile (Jimmy)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Get Second User Profile (Kelly)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{secondUserToken}}
+
+### Update Second User Profile (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "firstName": "Kelly Updated",
+  "lastName": "James Updated",
+  "phone": "+254701234568",
+  "dateOfBirth": "1995-05-16",
+  "licenseNumber": "DL987654321",
+  "address": "456 Updated Avenue, Mombasa",
+  "city": "Mombasa",
+  "country": "Kenya",
+  "zipCode": "80100"
+}
+
+### Upload Avatar (Jimmy) - Multipart form
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data
+Authorization: Bearer {{userToken}}
+
+# Note: In a real test, you would upload an actual image file
+# avatar=@/path/to/image.jpg
+
+###
+# 3. PASSWORD MANAGEMENT TESTS
+###
+
+### Change Password (Jimmy)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "{{testUserPassword}}",
+  "newPassword": "NewKimunyi123!"
+}
+
+### Login with New Password (Jimmy)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{testUserEmail}}",
+  "password": "NewKimunyi123!"
+}
+
+### Change Password Back (Jimmy)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "NewKimunyi123!",
+  "newPassword": "{{testUserPassword}}"
+}
+
+### Change Password (Kelly)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "currentPassword": "{{secondUserPassword}}",
+  "newPassword": "NewKelly911254!"
+}
+
+### Change Password Back (Kelly)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "currentPassword": "NewKelly911254!",
+  "newPassword": "{{secondUserPassword}}"
+}
+
+###
+# 4. USER ACTIVITY TESTS
+###
+
+### Get User Activity Log (Jimmy)
+GET {{baseUrl}}/users/activity?page=1&limit=10
+Authorization: Bearer {{userToken}}
+
+### Get User Activity with Different Pagination (Jimmy)
+GET {{baseUrl}}/users/activity?page=2&limit=5
+Authorization: Bearer {{userToken}}
+
+### Get User Activity Log (Kelly)
+GET {{baseUrl}}/users/activity?page=1&limit=10
+Authorization: Bearer {{secondUserToken}}
+
+###
+# 5. ADMIN USER MANAGEMENT TESTS
+###
+
+### Get All Users (Admin only)
+GET {{baseUrl}}/users?page=1&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Search Users by Name (Jimmy)
+GET {{baseUrl}}/users?page=1&limit=10&search=Jimmy
+Authorization: Bearer {{adminToken}}
+
+### Search Users by Name (Kelly)
+GET {{baseUrl}}/users?page=1&limit=10&search=Kelly
+Authorization: Bearer {{adminToken}}
+
+### Search Users by Email Pattern
+GET {{baseUrl}}/users?page=1&limit=10&search=gmail.com
+Authorization: Bearer {{adminToken}}
+
+### Filter Users by Role (Customer)
+GET {{baseUrl}}/users?page=1&limit=10&role=CUSTOMER
+Authorization: Bearer {{adminToken}}
+
+### Filter Users by Role (Admin)
+GET {{baseUrl}}/users?page=1&limit=10&role=ADMIN
+Authorization: Bearer {{adminToken}}
+
+### Filter Active Users
+GET {{baseUrl}}/users?page=1&limit=10&isActive=true
+Authorization: Bearer {{adminToken}}
+
+### Filter Inactive Users
+GET {{baseUrl}}/users?page=1&limit=10&isActive=false
+Authorization: Bearer {{adminToken}}
+
+### Get Specific User by ID (Admin only) - Use Jimmy's ID
+GET {{baseUrl}}/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Get Specific User by ID (Admin only) - Use Kelly's ID
+GET {{baseUrl}}/users/{{secondUserId}}
+Authorization: Bearer {{adminToken}}
+
+### Update User by ID (Admin only) - Update Jimmy
+PATCH {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Jimmy Admin Updated",
+  "lastName": "Kimunyi Admin Updated",
+  "phone": "+254113514114",
+  "role": "CUSTOMER",
+  "isActive": true
+}
+
+### Update User by ID (Admin only) - Update Kelly
+PATCH {{baseUrl}}/users/{{secondUserId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Kelly Admin Updated",
+  "lastName": "James Admin Updated",
+  "phone": "+254701234569",
+  "role": "CUSTOMER",
+  "isActive": true
+}
+
+### Create Additional Test User
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "testuser3@example.com",
+  "password": "TestUser123!",
+  "firstName": "Third",
+  "lastName": "User",
+  "phone": "+254712345678",
+  "dateOfBirth": "1992-06-15",
+  "role": "CUSTOMER",
+  "isActive": true,
+  "isVerified": false
+}
+
+### Create Agent User
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "eb14.55919.21@student.chuka.ac.ke",
+  "password": "AgentUser123!",
+  "firstName": "Purity",
+  "lastName": "Mallity",
+  "phone": "+254723456789",
+  "dateOfBirth": "1988-03-20",
+  "role": "AGENT",
+  "isActive": true,
+  "isVerified": true
+}
+
+###
+# 6. USER STATUS MANAGEMENT TESTS
+###
+
+### Deactivate User (Jimmy)
+PATCH {{baseUrl}}/users/{{userId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### Try to Login with Deactivated User (Should Fail) - Jimmy
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{testUserEmail}}",
+  "password": "{{testUserPassword}}"
+}
+
+### Activate User (Jimmy)
+PATCH {{baseUrl}}/users/{{userId}}/activate
+Authorization: Bearer {{adminToken}}
+
+### Login with Activated User (Should Work) - Jimmy
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{testUserEmail}}",
+  "password": "{{testUserPassword}}"
+}
+
+### Deactivate Second User (Kelly)
+PATCH {{baseUrl}}/users/{{secondUserId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### Try to Login with Deactivated User (Should Fail) - Kelly
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{secondUserEmail}}",
+  "password": "{{secondUserPassword}}"
+}
+
+### Activate Second User (Kelly)
+PATCH {{baseUrl}}/users/{{secondUserId}}/activate
+Authorization: Bearer {{adminToken}}
+
+###
+# 7. ERROR HANDLING TESTS
+###
+
+### Try to Access Admin Endpoint as Regular User (Should Fail) - Jimmy
+GET {{baseUrl}}/users
+Authorization: Bearer {{userToken}}
+
+### Try to Access Admin Endpoint as Regular User (Should Fail) - Kelly
+GET {{baseUrl}}/users
+Authorization: Bearer {{secondUserToken}}
+
+### Try to Create User with Existing Email (Should Fail) - Jimmy's email
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "{{testUserEmail}}",
+  "password": "TestUser123!",
+  "firstName": "Duplicate",
+  "lastName": "User",
+  "role": "CUSTOMER"
+}
+
+### Try to Create User with Existing Phone (Should Fail) - Kelly's phone
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "newuser@example.com",
+  "password": "TestUser123!",
+  "firstName": "New",
+  "lastName": "User",
+  "phone": "+254701234567",
+  "role": "CUSTOMER"
+}
+
+### Try to Update Profile with Invalid Data (Should Fail) - Jimmy
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "",
+  "email": "invalid-email"
+}
+
+### Try to Change Password with Wrong Current Password (Should Fail) - Jimmy
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "WrongPassword123!",
+  "newPassword": "NewPassword123!"
+}
+
+### Try to Change Password with Weak Password (Should Fail) - Jimmy
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "{{testUserPassword}}",
+  "newPassword": "weak"
+}
+
+### Try to Access Non-existent User (Should Fail)
+GET {{baseUrl}}/users/non-existent-id
+Authorization: Bearer {{adminToken}}
+
+### Try to Update Non-existent User (Should Fail)
+PATCH {{baseUrl}}/users/non-existent-id
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "firstName": "Updated"
+}
+
+###
+# 8. PAGINATION TESTS
+###
+
+### Test Large Page Size
+GET {{baseUrl}}/users?page=1&limit=100
+Authorization: Bearer {{adminToken}}
+
+### Test Beyond Available Pages
+GET {{baseUrl}}/users?page=999&limit=10
+Authorization: Bearer {{adminToken}}
+
+### Test Invalid Page Parameters
+GET {{baseUrl}}/users?page=0&limit=-5
+Authorization: Bearer {{adminToken}}
+
+###
+# 9. SEARCH AND FILTER COMBINATION TESTS
+###
+
+### Search Active Customers
+GET {{baseUrl}}/users?search=Kimunyi&role=CUSTOMER&isActive=true
+Authorization: Bearer {{adminToken}}
+
+### Search by Email Pattern
+GET {{baseUrl}}/users?search=gmail.com
+Authorization: Bearer {{adminToken}}
+
+### Search by First Name (Jimmy)
+GET {{baseUrl}}/users?search=Jimmy
+Authorization: Bearer {{adminToken}}
+
+### Search by First Name (Kelly)
+GET {{baseUrl}}/users?search=Kelly
+Authorization: Bearer {{adminToken}}
+
+### Search by Last Name (Kimunyi)
+GET {{baseUrl}}/users?search=Kimunyi
+Authorization: Bearer {{adminToken}}
+
+### Search by Last Name (James)
+GET {{baseUrl}}/users?search=James
+Authorization: Bearer {{adminToken}}
+
+###
+# 10. PERFORMANCE TESTS
+###
+
+### Rapid Profile Updates (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy Rapid 1"
+}
+
+### 
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy Rapid 2"
+}
+
+### 
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy Rapid 3"
+}
+
+### Rapid Profile Updates (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "firstName": "Kelly Rapid 1"
+}
+
+### 
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "firstName": "Kelly Rapid 2"
+}
+
+###
+# 11. AUTHORIZATION TESTS
+###
+
+### Test Access Without Token (Should Fail)
+GET {{baseUrl}}/users/profile
+
+### Test Access with Invalid Token (Should Fail)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer invalid-token
+
+### Test Cross-User Access (Jimmy trying to access Kelly's data)
+# Note: This would require endpoint that accepts user ID, which doesn't exist in profile endpoints
+
+###
+# 12. DATA VALIDATION TESTS
+###
+
+### Create User with Invalid Email (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "invalid-email",
+  "password": "TestUser123!",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "CUSTOMER"
+}
+
+### Create User with Short Password (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "shortpass@example.com",
+  "password": "123",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "CUSTOMER"
+}
+
+### Create User with Invalid Phone (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "invalidphone@example.com",
+  "password": "TestUser123!",
+  "firstName": "Test",
+  "lastName": "User",
+  "phone": "invalid-phone",
+  "role": "CUSTOMER"
+}
+
+### Create User with Invalid Role (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "invalidrole@example.com",
+  "password": "TestUser123!",
+  "firstName": "Test",
+  "lastName": "User",
+  "role": "INVALID_ROLE"
+}
+
+### Create User with Short First Name (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "shortname@example.com",
+  "password": "TestUser123!",
+  "firstName": "A",
+  "lastName": "User",
+  "role": "CUSTOMER"
+}
+
+### Create User with Short Last Name (Should Fail)
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "shortlast@example.com",
+  "password": "TestUser123!",
+  "firstName": "Test",
+  "lastName": "B",
+  "role": "CUSTOMER"
+}
+
+### Update Profile with Invalid Date (Should Fail) - Jimmy
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "dateOfBirth": "invalid-date"
+}
+
+### Update Profile with Invalid Phone (Should Fail) - Jimmy
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "phone": "invalid-phone-format"
+}
+
+###
+# 13. EDGE CASE TESTS
+###
+
+### Update Profile with Same Data (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy",
+  "lastName": "Kimunyi"
+}
+
+### Update Profile with Same Data (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "firstName": "Kelly",
+  "lastName": "James"
+}
+
+### Create User with Minimum Required Data
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "minimal@example.com",
+  "password": "MinimalUser123!",
+  "firstName": "Min",
+  "lastName": "User",
+  "role": "CUSTOMER"
+}
+
+### Create User with Maximum Data
+POST {{baseUrl}}/users
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "email": "maximal@example.com",
+  "password": "MaximalUser123!",
+  "firstName": "Maximal Test User",
+  "lastName": "With Long Last Name",
+  "phone": "+254734567890",
+  "dateOfBirth": "1990-12-31",
+  "role": "CUSTOMER",
+  "isActive": true,
+  "isVerified": true,
+  "licenseNumber": "MAX123456789",
+  "address": "123 Maximal Street, Suite 456, Building A",
+  "city": "Maximal City",
+  "country": "Kenya",
+  "zipCode": "99999"
+}
+
+### Update Profile with Unicode Characters (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jïmmy",
+  "lastName": "Kïmünyï",
+  "address": "123 Ñairobi Street"
+}
+
+###
+# 14. CONCURRENT ACCESS TESTS
+###
+
+### Multiple Profile Updates (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "firstName": "Jimmy Concurrent 1"
+}
+
+### Simultaneous Update (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "firstName": "Kelly Concurrent 1"
+}
+
+### Another Update (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "lastName": "Kimunyi Concurrent 2"
+}
+
+### Another Update (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "lastName": "James Concurrent 2"
+}
+
+### Verify Final State (Jimmy)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Verify Final State (Kelly)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{secondUserToken}}
+
+###
+# 15. ACTIVITY LOGGING VERIFICATION
+###
+
+### Trigger Multiple Activities (Jimmy)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "city": "Nairobi Updated"
+}
+
+### Change Password (Jimmy)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "{{testUserPassword}}",
+  "newPassword": "TempPassword123!"
+}
+
+### Change Password Back (Jimmy)
+PATCH {{baseUrl}}/users/change-password
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "currentPassword": "TempPassword123!",
+  "newPassword": "{{testUserPassword}}"
+}
+
+### Check Activity Log (Jimmy)
+GET {{baseUrl}}/users/activity?page=1&limit=20
+Authorization: Bearer {{userToken}}
+
+### Trigger Activities (Kelly)
+PATCH {{baseUrl}}/users/profile
+Content-Type: application/json
+Authorization: Bearer {{secondUserToken}}
+
+{
+  "city": "Mombasa Updated"
+}
+
+### Check Activity Log (Kelly)
+GET {{baseUrl}}/users/activity?page=1&limit=20
+Authorization: Bearer {{secondUserToken}}
+
+###
+# 16. ADMIN OPERATIONS ON EXISTING USERS
+###
+
+### Admin Update Jimmy's Status
+PATCH {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "isActive": true,
+  "isVerified": true
+}
+
+### Admin Update Kelly's Status
+PATCH {{baseUrl}}/users/{{secondUserId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "isActive": true,
+  "isVerified": true
+}
+
+### Admin Update Jimmy's Role (if needed)
+PATCH {{baseUrl}}/users/{{userId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "role": "CUSTOMER"
+}
+
+### Admin Update Kelly's Role (if needed)
+PATCH {{baseUrl}}/users/{{secondUserId}}
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "role": "CUSTOMER"
+}
+
+###
+# 17. CLEANUP TESTS (Use with caution)
+###
+
+### Delete Additional Test Users (Admin only)
+# Note: Be careful with these - they will permanently delete users
+# DELETE {{baseUrl}}/users/{{userId}}
+# Authorization: Bearer {{adminToken}}
+
+### Try to Access Deleted User (Should Fail)
+# GET {{baseUrl}}/users/{{userId}}
+# Authorization: Bearer {{adminToken}}
+
+### Try to Login with Deleted User (Should Fail)
+# POST {{baseUrl}}/auth/login
+# Content-Type: application/json
+# {
+#   "email": "{{testUserEmail}}",
+#   "password": "{{testUserPassword}}"
+# }
+
+###
+# END OF TESTS
+###
+
+# Notes:
+# 1. Replace {{adminToken}}, {{userToken}}, {{secondUserToken}}, {{userId}}, and {{secondUserId}} with actual values after login
+# 2. The users used in this test are:
+#    - Admin: jkkimunyi@gmail.com (@_Kimunyi123!)
+#    - User 1: kimunyijimmy@gmail.com (Kimunyi123!)
+#    - User 2: jkelly911254@gmail.com (Kelly911254!)
+# 3. Some tests require file uploads - adjust multipart requests accordingly
+# 4. Run tests in sequence for proper setup and teardown
+# 5. Monitor server logs for detailed error information
+# 6. Cleanup tests are commented out to prevent accidental deletion
+# 7. Make sure to run auth-test.http first to create the required users

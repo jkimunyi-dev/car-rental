@@ -1,0 +1,611 @@
+### Variables
+@baseUrl = http://localhost:3000/api
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTk2NTE5LCJleHAiOjE3NTEyMDAxMTl9.b914c_yh-u80xCTV_2zm0AGSlLWwzWW6a160a3zCOdQ
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTk0NjU4LCJleHAiOjE3NTExOTgyNTh9.9IWIBpeOjjqjVg73SCKwYkbVIj1PDWDBRLp03wreacw
+@agentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoaHNwMHEwMDAwOXp4bzBxOTBidTZlIiwiaWF0IjoxNzUxMTkwOTQ0LCJleHAiOjE3NTExOTQ1NDR9.qDRnkJyPbGk8eQGv1Vin_iCxs10-LuMMfAnzbjZCdVY
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnZ1aGEwMDAwOXo0aTRvcmczNHIxIiwiaWF0IjoxNzUxMTkwOTk2LCJleHAiOjE3NTExOTQ1OTZ9.m_jNuqDiGUE6lW1exUUiL6H7nyO1LC1b0Xf9951A5t8
+@bookingId = cmchj6o3d00019zjatwtob728
+@vehicleId = cmchi3ljd000d9zxo1p5kupry
+@paymentId = cmchk030f00039zfignp2ph1r
+@paymentMethodId = YOUR_PAYMENT_METHOD_ID_HERE
+
+### ========== SETUP: CREATE BOOKING FOR PAYMENT TESTING ==========
+
+### Create a test booking first (needed for payment tests)
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-07-01",
+  "endDate": "2025-07-03",
+  "pickupLocation": "Nairobi Airport",
+  "dropoffLocation": "Nairobi CBD",
+  "notes": "Test booking for payment testing"
+}
+
+### ========== CREATE PAYMENT TESTS ==========
+
+### Create payment with Daraja (Mock Mode - will always succeed)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678",
+  "accountReference": "TEST_REF_001",
+  "transactionDesc": "Payment for car rental booking"
+}
+
+### Create payment with Card method (Mock Mode)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "USD",
+  "paymentMethod": "card",
+  "accountReference": "CARD_REF_001",
+  "transactionDesc": "Card payment for booking"
+}
+
+### Create payment with Bank method (Mock Mode)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "bank",
+  "accountReference": "BANK_REF_001",
+  "transactionDesc": "Bank transfer payment"
+}
+
+### Create payment without authentication (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### Create payment for non-existent booking (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "non-existent-booking-id",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### Create payment with invalid amount (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": -50.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### Create payment with missing required fields (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "currency": "KES"
+}
+
+### Create duplicate payment for same booking (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### Create payment for another user's booking (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{userToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### ========== DARAJA CALLBACK TESTS (FOR REAL INTEGRATION) ==========
+
+### Successful Daraja callback
+POST {{baseUrl}}/payments/daraja/callback
+Content-Type: application/json
+
+{
+  "MerchantRequestID": "92806-94590-2",
+  "CheckoutRequestID": "ws_CO_DMZ_123456789_02032023194530123",
+  "ResultCode": 0,
+  "ResultDesc": "The service request is processed successfully.",
+  "CallbackMetadata": {
+    "Item": [
+      {
+        "Name": "Amount",
+        "Value": 150.00
+      },
+      {
+        "Name": "MpesaReceiptNumber",
+        "Value": "NLJ7RT61SV"
+      },
+      {
+        "Name": "TransactionDate",
+        "Value": 20230203194530
+      },
+      {
+        "Name": "PhoneNumber",
+        "Value": 254712345678
+      }
+    ]
+  }
+}
+
+### Failed Daraja callback
+POST {{baseUrl}}/payments/daraja/callback
+Content-Type: application/json
+
+{
+  "MerchantRequestID": "92806-94590-3",
+  "CheckoutRequestID": "ws_CO_DMZ_123456789_02032023194530124",
+  "ResultCode": 1032,
+  "ResultDesc": "Request cancelled by user"
+}
+
+### Daraja confirmation endpoint
+POST {{baseUrl}}/payments/daraja/confirmation
+Content-Type: application/json
+
+{
+  "TransactionType": "Pay Bill",
+  "TransID": "NLJ7RT61SV",
+  "TransTime": "20230203194530",
+  "TransAmount": "150.00",
+  "BusinessShortCode": "174379",
+  "BillRefNumber": "TEST_REF_001",
+  "InvoiceNumber": "",
+  "OrgAccountBalance": "49001.00",
+  "ThirdPartyTransID": "",
+  "MSISDN": "254712345678",
+  "FirstName": "John",
+  "MiddleName": "",
+  "LastName": "Doe"
+}
+
+### Daraja validation endpoint
+POST {{baseUrl}}/payments/daraja/validation
+Content-Type: application/json
+
+{
+  "TransactionType": "Pay Bill",
+  "TransID": "NLJ7RT61SV",
+  "TransTime": "20230203194530",
+  "TransAmount": "150.00",
+  "BusinessShortCode": "174379",
+  "BillRefNumber": "TEST_REF_001",
+  "MSISDN": "254712345678",
+  "FirstName": "John",
+  "LastName": "Doe"
+}
+
+### ========== GET PAYMENTS TESTS ==========
+
+### Get all payments (authenticated user - sees only their payments)
+GET {{baseUrl}}/payments
+Authorization: Bearer {{accessToken}}
+
+### Get payments with pagination
+GET {{baseUrl}}/payments?page=1&limit=5
+Authorization: Bearer {{accessToken}}
+
+### Get payments filtered by status
+GET {{baseUrl}}/payments?status=COMPLETED
+Authorization: Bearer {{accessToken}}
+
+### Get payments filtered by payment method
+GET {{baseUrl}}/payments?paymentMethod=daraja
+Authorization: Bearer {{accessToken}}
+
+### Get payments filtered by date range
+GET {{baseUrl}}/payments?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{accessToken}}
+
+### Get payments with multiple filters
+GET {{baseUrl}}/payments?status=COMPLETED&paymentMethod=daraja&page=1&limit=10
+Authorization: Bearer {{accessToken}}
+
+### Get payments filtered by booking ID
+GET {{baseUrl}}/payments?bookingId={{bookingId}}
+Authorization: Bearer {{accessToken}}
+
+### Get all payments (Admin - sees all payments)
+GET {{baseUrl}}/payments
+Authorization: Bearer {{adminToken}}
+
+### Get payments with invalid status filter (should fail)
+GET {{baseUrl}}/payments?status=INVALID_STATUS
+Authorization: Bearer {{accessToken}}
+
+### Get payments without authentication (should fail)
+GET {{baseUrl}}/payments
+
+### ========== GET SINGLE PAYMENT TESTS ==========
+
+### Get payment by ID (owner)
+GET {{baseUrl}}/payments/{{paymentId}}
+Authorization: Bearer {{accessToken}}
+
+### Get payment by ID (admin)
+GET {{baseUrl}}/payments/{{paymentId}}
+Authorization: Bearer {{adminToken}}
+
+### Get payment by ID (different user - should fail)
+GET {{baseUrl}}/payments/{{paymentId}}
+Authorization: Bearer {{userToken}}
+
+### Get payment with invalid ID (should fail)
+GET {{baseUrl}}/payments/invalid-payment-id
+Authorization: Bearer {{accessToken}}
+
+### Get payment without authentication (should fail)
+GET {{baseUrl}}/payments/{{paymentId}}
+
+### ========== PAYMENT STATISTICS TESTS ==========
+
+### Get payment statistics (user)
+GET {{baseUrl}}/payments/stats
+Authorization: Bearer {{accessToken}}
+
+### Get payment statistics (admin - all payments)
+GET {{baseUrl}}/payments/stats
+Authorization: Bearer {{adminToken}}
+
+### Get payment statistics without authentication (should fail)
+GET {{baseUrl}}/payments/stats
+
+### ========== INVOICE GENERATION TESTS ==========
+
+### Download invoice for completed payment (PDF)
+GET {{baseUrl}}/payments/{{paymentId}}/invoice
+Authorization: Bearer {{accessToken}}
+
+### Send invoice via email for completed payment (NEW)
+POST {{baseUrl}}/payments/{{paymentId}}/invoice/send
+Authorization: Bearer {{accessToken}}
+
+### Send invoice via email (admin) (NEW)
+POST {{baseUrl}}/payments/{{paymentId}}/invoice/send
+Authorization: Bearer {{adminToken}}
+
+### Download invoice (admin)
+GET {{baseUrl}}/payments/{{paymentId}}/invoice
+Authorization: Bearer {{adminToken}}
+
+### Send invoice for non-existent payment via email (should fail) (NEW)
+POST {{baseUrl}}/payments/non-existent-id/invoice/send
+Authorization: Bearer {{accessToken}}
+
+### Send invoice for pending payment via email (should fail - if you have one) (NEW)
+POST {{baseUrl}}/payments/some-pending-payment-id/invoice/send
+Authorization: Bearer {{accessToken}}
+
+### Send invoice via email without authentication (should fail) (NEW)
+POST {{baseUrl}}/payments/{{paymentId}}/invoice/send
+
+### Download invoice for non-existent payment (should fail)
+GET {{baseUrl}}/payments/non-existent-id/invoice
+Authorization: Bearer {{accessToken}}
+
+### Download invoice for pending payment (should fail - if you have one)
+GET {{baseUrl}}/payments/some-pending-payment-id/invoice
+Authorization: Bearer {{accessToken}}
+
+### Download invoice without authentication (should fail)
+GET {{baseUrl}}/payments/{{paymentId}}/invoice
+
+### ========== REFUND PROCESSING TESTS (ADMIN ONLY) ==========
+
+### Process full refund (admin)
+PATCH {{baseUrl}}/payments/{{paymentId}}/refund
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{}
+
+### Process partial refund (admin)
+PATCH {{baseUrl}}/payments/{{paymentId}}/refund
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "refundAmount": 75.00
+}
+
+### Process refund with amount greater than payment (should fail)
+PATCH {{baseUrl}}/payments/{{paymentId}}/refund
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{
+  "refundAmount": 200.00
+}
+
+### Process refund as non-admin (should fail)
+PATCH {{baseUrl}}/payments/{{paymentId}}/refund
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "refundAmount": 50.00
+}
+
+### Process refund for non-existent payment (should fail)
+PATCH {{baseUrl}}/payments/non-existent-id/refund
+Content-Type: application/json
+Authorization: Bearer {{adminToken}}
+
+{}
+
+### Process refund without authentication (should fail)
+PATCH {{baseUrl}}/payments/{{paymentId}}/refund
+Content-Type: application/json
+
+{}
+
+### ========== PAYMENT METHODS MANAGEMENT TESTS ==========
+
+### Create payment method (card)
+POST {{baseUrl}}/payments/methods
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "type": "card",
+  "last4": "4242",
+  "brand": "visa",
+  "expiryMonth": 12,
+  "expiryYear": 2025,
+  "isDefault": true,
+  "stripePaymentMethodId": "pm_1234567890"
+}
+
+### Create payment method (bank account)
+POST {{baseUrl}}/payments/methods
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "type": "bank_account",
+  "last4": "1234",
+  "brand": "equity",
+  "isDefault": false
+}
+
+### Create payment method with missing required fields (should fail)
+POST {{baseUrl}}/payments/methods
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "type": "card"
+}
+
+### Create payment method without authentication (should fail)
+POST {{baseUrl}}/payments/methods
+Content-Type: application/json
+
+{
+  "type": "card",
+  "last4": "4242",
+  "brand": "visa"
+}
+
+### Get all payment methods
+GET {{baseUrl}}/payments/methods
+Authorization: Bearer {{accessToken}}
+
+### Get payment methods without authentication (should fail)
+GET {{baseUrl}}/payments/methods
+
+### Delete payment method
+DELETE {{baseUrl}}/payments/methods/{{paymentMethodId}}
+Authorization: Bearer {{accessToken}}
+
+### Delete payment method (different user - should fail)
+DELETE {{baseUrl}}/payments/methods/{{paymentMethodId}}
+Authorization: Bearer {{userToken}}
+
+### Delete non-existent payment method (should fail)
+DELETE {{baseUrl}}/payments/methods/non-existent-id
+Authorization: Bearer {{accessToken}}
+
+### Delete payment method without authentication (should fail)
+DELETE {{baseUrl}}/payments/methods/{{paymentMethodId}}
+
+### ========== ERROR HANDLING TESTS ==========
+
+### Create payment with malformed JSON (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja"
+  // Missing closing brace to test malformed JSON
+
+### Create payment with invalid phone number format
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "invalid-phone-number"
+}
+
+### Create payment with unsupported payment method
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "cryptocurrency"
+}
+
+### Create payment with zero amount (should fail)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 0,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+### ========== PERFORMANCE AND LOAD TESTS ==========
+
+### Create multiple payments rapidly (test rate limiting)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678",
+  "accountReference": "LOAD_TEST_1"
+}
+
+### Get payments with large limit (test pagination limits)
+GET {{baseUrl}}/payments?limit=1000
+Authorization: Bearer {{accessToken}}
+
+### ========== INTEGRATION TESTS ==========
+
+### Complete payment flow: Create booking -> Create payment -> Check status
+# Step 1: Create booking
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-08-01",
+  "endDate": "2025-08-03",
+  "pickupLocation": "Nairobi Airport"
+}
+
+# Step 2: Create payment (use booking ID from step 1)
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "BOOKING_ID_FROM_STEP_1",
+  "amount": 150.00,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678"
+}
+
+# Step 3: Check payment status
+GET {{baseUrl}}/payments/PAYMENT_ID_FROM_STEP_2
+Authorization: Bearer {{accessToken}}
+
+# Step 4: Download invoice
+GET {{baseUrl}}/payments/PAYMENT_ID_FROM_STEP_2/invoice
+Authorization: Bearer {{accessToken}}
+
+### ========== MOCK MODE SPECIFIC TESTS ==========
+
+### Test mock payment success notification
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 99.99,
+  "currency": "KES",
+  "paymentMethod": "daraja",
+  "phoneNumber": "+254712345678",
+  "accountReference": "MOCK_SUCCESS_TEST",
+  "transactionDesc": "Testing mock payment success"
+}
+
+### Verify mock transaction ID format
+GET {{baseUrl}}/payments
+Authorization: Bearer {{accessToken}}
+
+### Test different currencies in mock mode
+POST {{baseUrl}}/payments
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "bookingId": "{{bookingId}}",
+  "amount": 25.50,
+  "currency": "USD",
+  "paymentMethod": "card",
+  "accountReference": "USD_MOCK_TEST"
+}
+
+### ========== CLEANUP TESTS ==========
+
+### Check final payment status after all tests
+GET {{baseUrl}}/payments/stats
+Authorization: Bearer {{adminToken}}
+
+### List all payments to verify test data
+GET {{baseUrl}}/payments?limit=50
+Authorization: Bearer {{adminToken}}

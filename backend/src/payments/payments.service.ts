@@ -1,31 +1,25 @@
-import {
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PaymentStatus, Role } from '@prisma/client';
+
+import { 
+  IPaymentService, 
+  PaymentWithDetails, 
+  IPaginatedPayments, 
+  IPaymentMethod, 
+  IPaymentStats 
+} from './payment.interface';
 import { DarajaService } from './daraja.service';
 import { InvoiceService } from './invoice.service';
-
-import { PaymentStatus, Role } from '@prisma/client';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { DarajaCallbackDto } from './dto/daraja-payment.dto';
 import { CreatePaymentMethodDto } from './dto/payment-method.dto';
 import { QueryPaymentDto } from './dto/query-payment.dto';
-import {
-  IPaymentService,
-  IPaymentWithDetails,
-  IPaginatedPayments,
-  IPaymentMethod,
-  IPaymentStats,
-} from './payment.interface';
-
-import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class PaymentsService implements IPaymentService {
   private readonly logger = new Logger(PaymentsService.name);
+  private readonly isMockMode = process.env.NODE_ENV !== 'production' || process.env.PAYMENT_MODE === 'mock';
 
   constructor(
     private prisma: PrismaService,
@@ -58,9 +52,7 @@ export class PaymentsService implements IPaymentService {
     }
 
     if (booking.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only create payments for your own bookings',
-      );
+      throw new ForbiddenException('You can only pay for your own bookings');
     }
 
     // Check if payment already exists
@@ -91,46 +83,68 @@ export class PaymentsService implements IPaymentService {
       },
     });
 
-    // Process payment based on method
+    // Process payment based on method and mode
+    if (this.isMockMode) {
+      // Mock payment - always successful
+      await this.processMockPayment(payment.id);
+      
+      return {
+        ...payment,
+        status: PaymentStatus.COMPLETED,
+        transactionId: `MOCK_TXN_${Date.now()}`,
+        paidAt: new Date(),
+        message: 'Payment completed successfully (Mock Mode)',
+      };
+    }
+
+    // Real payment processing
     if (paymentMethod === 'daraja') {
-      if (!phoneNumber) {
-        throw new BadRequestException(
-          'Phone number is required for Daraja payments',
-        );
-      }
+      const result = await this.darajaService.stkPush(
+        phoneNumber!,
+        amount,
+        accountReference || bookingId,
+        transactionDesc || `Payment for booking ${bookingId}`,
+      );
 
-      try {
-        const darajaResponse = await this.darajaService.stkPush(
-          phoneNumber,
-          amount,
-          accountReference || `CAR-${booking.id}`,
-          transactionDesc ||
-            `Payment for ${booking.vehicle.make} ${booking.vehicle.model} rental`,
-        );
-
-        // Update payment with Daraja details
+      if (result.success) {
         await this.prisma.payment.update({
           where: { id: payment.id },
-          data: {
-            transactionId: darajaResponse.CheckoutRequestID,
-          },
+          data: { transactionId: result.checkoutRequestId },
         });
-
-        return {
-          ...payment,
-          darajaResponse,
-        };
-      } catch (error) {
-        // Update payment status to failed
-        await this.prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: PaymentStatus.FAILED },
-        });
-        throw error;
       }
+
+      return { ...payment, ...result };
     }
 
     return payment;
+  }
+
+  private async processMockPayment(paymentId: string): Promise<void> {
+    // Simulate payment processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Update payment to completed
+    await this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        status: PaymentStatus.COMPLETED,
+        transactionId: `MOCK_TXN_${Date.now()}`,
+        paidAt: new Date(),
+      },
+    });
+
+    // Update booking status
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { booking: true },
+    });
+
+    if (payment) {
+      await this.prisma.booking.update({
+        where: { id: payment.bookingId },
+        data: { status: 'CONFIRMED' },
+      });
+    }
   }
 
   async handleDarajaCallback(
@@ -157,22 +171,6 @@ export class PaymentsService implements IPaymentService {
         (item) => item.Name === 'MpesaReceiptNumber',
       )?.Value;
 
-      // Extract additional callback data for logging/auditing purposes
-      const transactionDate = CallbackMetadata?.Item?.find(
-        (item) => item.Name === 'TransactionDate',
-      )?.Value;
-      const phoneNumber = CallbackMetadata?.Item?.find(
-        (item) => item.Name === 'PhoneNumber',
-      )?.Value;
-
-      // Log callback metadata for audit trail
-      this.logger.log('Payment callback received', {
-        paymentId: payment.id,
-        transactionDate,
-        phoneNumber,
-        receiptNumber,
-      });
-
       await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -193,9 +191,7 @@ export class PaymentsService implements IPaymentService {
       // Payment failed
       await this.prisma.payment.update({
         where: { id: payment.id },
-        data: {
-          status: PaymentStatus.FAILED,
-        },
+        data: { status: PaymentStatus.FAILED },
       });
 
       return { success: false, message: ResultDesc };
@@ -257,7 +253,7 @@ export class PaymentsService implements IPaymentService {
     ]);
 
     return {
-      payments: payments as IPaymentWithDetails[],
+      payments: payments as PaymentWithDetails[],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -271,7 +267,7 @@ export class PaymentsService implements IPaymentService {
     paymentId: string,
     userId: string,
     userRole: Role,
-  ): Promise<IPaymentWithDetails> {
+  ): Promise<PaymentWithDetails> {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
       include: {
@@ -290,16 +286,16 @@ export class PaymentsService implements IPaymentService {
 
     // Users can only see their own payments
     if (userRole !== Role.ADMIN && payment.booking.userId !== userId) {
-      throw new ForbiddenException('You can only view your own payments');
+      throw new ForbiddenException('Access denied');
     }
 
-    return payment as IPaymentWithDetails;
+    return payment as PaymentWithDetails;
   }
 
   async processRefund(
     paymentId: string,
     refundAmount?: number,
-  ): Promise<IPaymentWithDetails> {
+  ): Promise<PaymentWithDetails> {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
       include: { booking: true },
@@ -316,9 +312,7 @@ export class PaymentsService implements IPaymentService {
     const refundAmountFinal = refundAmount || payment.amount;
 
     if (refundAmountFinal > payment.amount) {
-      throw new BadRequestException(
-        'Refund amount cannot exceed payment amount',
-      );
+      throw new BadRequestException('Refund amount cannot exceed payment amount');
     }
 
     // Update payment with refund details
@@ -345,7 +339,7 @@ export class PaymentsService implements IPaymentService {
       data: { status: 'CANCELLED' },
     });
 
-    return updatedPayment as IPaymentWithDetails;
+    return updatedPayment as PaymentWithDetails;
   }
 
   async generateInvoice(
@@ -357,11 +351,39 @@ export class PaymentsService implements IPaymentService {
 
     if (payment.status !== PaymentStatus.COMPLETED) {
       throw new BadRequestException(
-        'Can only generate invoices for completed payments',
+        'Invoice can only be generated for completed payments',
       );
     }
 
     return this.invoiceService.generateInvoice(paymentId);
+  }
+
+  // NEW METHOD: Send invoice via email (updated implementation)
+  async sendInvoiceByEmail(
+    paymentId: string,
+    userId: string,
+    userRole: Role,
+  ): Promise<{ success: boolean; message: string }> {
+    const payment = await this.getPaymentById(paymentId, userId, userRole);
+
+    if (payment.status !== PaymentStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Invoice can only be generated for completed payments',
+      );
+    }
+
+    try {
+      // Use the new method that generates and sends the invoice
+      await this.invoiceService.generateAndSendInvoice(paymentId);
+      
+      return {
+        success: true,
+        message: `Invoice has been generated and sent to ${payment.booking.user.email}`,
+      };
+    } catch (error) {
+      this.logger.error('Failed to send invoice by email', error);
+      throw new BadRequestException('Failed to send invoice by email');
+    }
   }
 
   // Payment Methods Management
@@ -374,7 +396,7 @@ export class PaymentsService implements IPaymentService {
     // If this is set as default, update other payment methods
     if (isDefault) {
       await this.prisma.paymentMethod.updateMany({
-        where: { userId, isDefault: true },
+        where: { userId },
         data: { isDefault: false },
       });
     }
@@ -412,9 +434,7 @@ export class PaymentsService implements IPaymentService {
     }
 
     if (paymentMethod.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only delete your own payment methods',
-      );
+      throw new ForbiddenException('Access denied');
     }
 
     const deletedPaymentMethod = await this.prisma.paymentMethod.delete({
@@ -427,23 +447,11 @@ export class PaymentsService implements IPaymentService {
   async getPaymentStats(userId?: string): Promise<IPaymentStats> {
     const where = userId ? { booking: { userId } } : {};
 
-    const [
-      totalPayments,
-      completedPayments,
-      pendingPayments,
-      failedPayments,
-      totalRevenue,
-    ] = await Promise.all([
+    const [total, completed, pending, failed, revenueResult] = await Promise.all([
       this.prisma.payment.count({ where }),
-      this.prisma.payment.count({
-        where: { ...where, status: PaymentStatus.COMPLETED },
-      }),
-      this.prisma.payment.count({
-        where: { ...where, status: PaymentStatus.PENDING },
-      }),
-      this.prisma.payment.count({
-        where: { ...where, status: PaymentStatus.FAILED },
-      }),
+      this.prisma.payment.count({ where: { ...where, status: PaymentStatus.COMPLETED } }),
+      this.prisma.payment.count({ where: { ...where, status: PaymentStatus.PENDING } }),
+      this.prisma.payment.count({ where: { ...where, status: PaymentStatus.FAILED } }),
       this.prisma.payment.aggregate({
         where: { ...where, status: PaymentStatus.COMPLETED },
         _sum: { amount: true },
@@ -451,11 +459,11 @@ export class PaymentsService implements IPaymentService {
     ]);
 
     return {
-      totalPayments,
-      completedPayments,
-      pendingPayments,
-      failedPayments,
-      totalRevenue: totalRevenue._sum.amount || 0,
+      totalPayments: total,
+      completedPayments: completed,
+      pendingPayments: pending,
+      failedPayments: failed,
+      totalRevenue: revenueResult._sum.amount || 0,
     };
   }
 }

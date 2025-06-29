@@ -2,18 +2,22 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
-  BadRequestException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadService } from '../upload/upload.service';
+import { EmailService } from '../email/email.service';
+import { Role } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { CreateAgentDto } from './dto/create-agent.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UserResponseDto } from './dto/user-response.dto';
-import { Role } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginationDto } from '../common/dto/api-response.dto';
 import { CloudinaryUploadResult } from './user.interface';
 
 interface FindAllOptions {
@@ -34,6 +38,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
+    private readonly emailService: EmailService,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -67,6 +72,84 @@ export class UsersService {
     await this.logActivity(user.id, 'USER_CREATED', 'User account created');
 
     return this.formatUserResponse(user);
+  }
+
+  async createAgent(createAgentDto: CreateAgentDto) {
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: createAgentDto.email }, { phone: createAgentDto.phone }],
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email or phone already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(createAgentDto.password, 12);
+
+    // Create agent user
+    const agent = await this.prisma.user.create({
+      data: {
+        email: createAgentDto.email,
+        password: hashedPassword,
+        firstName: createAgentDto.firstName,
+        lastName: createAgentDto.lastName,
+        phone: createAgentDto.phone,
+        dateOfBirth: createAgentDto.dateOfBirth
+          ? new Date(createAgentDto.dateOfBirth)
+          : null,
+        role: Role.AGENT,
+        isVerified: false, // Changed: Agents should also verify their email
+        isActive: true,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isVerified: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
+
+    // Generate verification token for agent
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const hashedVerificationToken = crypto
+      .createHash('sha256')
+      .update(verificationToken)
+      .digest('hex');
+
+    // Store verification token in database
+    await this.prisma.systemSettings.create({
+      data: {
+        key: `email_verification_${agent.id}`,
+        value: JSON.stringify({
+          token: hashedVerificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        }),
+      },
+    });
+
+    // Send welcome email to agent with verification URL
+    await this.emailService.sendWelcomeEmail({
+      user: {
+        firstName: agent.firstName,
+        lastName: agent.lastName,
+        email: agent.email,
+      },
+      verificationUrl: `${process.env.FRONTEND_URL}/auth/verify-email?token=${verificationToken}`,
+    });
+
+    return {
+      success: true,
+      message: 'Agent created successfully. Please check email for verification.',
+      data: agent,
+    };
   }
 
   async findAll(options: FindAllOptions) {
@@ -353,6 +436,81 @@ export class UsersService {
         page,
         limit,
         totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async updateUserRole(userId: string, role: Role) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        updatedAt: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: `User role updated to ${role}`,
+      data: updatedUser,
+    };
+  }
+
+  async getUsersByRole(role: Role, query: PaginationDto) {
+    const { page = 1, limit = 10, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+    const skip = (page - 1) * limit;
+
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { role },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          role: true,
+          isActive: true,
+          isVerified: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        skip,
+        take: limit,
+        orderBy: { [sortBy]: sortOrder },
+      }),
+      this.prisma.user.count({ where: { role } }),
+    ]);
+
+    return {
+      data: users,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1,
       },
     };
   }

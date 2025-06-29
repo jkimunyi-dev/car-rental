@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Get,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -16,6 +17,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -75,8 +77,22 @@ export class AuthController {
 
   @Public()
   @Get('verify-email')
-  async verifyEmail(@Query('token') token: string): Promise<void> {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
+    if (!token) {
+      throw new BadRequestException('Verification token is required');
+    }
+    await this.authService.verifyEmail(token);
+    return { message: 'Email verified successfully' };
+  }
+
+  @Public()
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
+    await this.authService.resendVerificationEmail(resendVerificationDto.email);
+    return { message: 'Verification email sent successfully' };
   }
 
   @Get('profile')

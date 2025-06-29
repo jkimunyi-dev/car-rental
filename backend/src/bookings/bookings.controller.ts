@@ -17,42 +17,46 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
+import { BookingResponse } from './booking.interface';
 import {
   CreateBookingDto,
   UpdateBookingDto,
-  BookingResponseDto,
   BookingStatusUpdateDto,
   CancelBookingDto,
 } from './dto/create-booking.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { Public } from '../auth/decorators/public.decorator';
 import { BookingStatus, Role } from '@prisma/client';
 
 @ApiTags('bookings')
-@ApiBearerAuth()
 @Controller('bookings')
-@UseGuards(RolesGuard)
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
   @Roles(Role.CUSTOMER, Role.ADMIN, Role.AGENT)
-  @ApiOperation({ summary: 'Create a new booking' })
+  @ApiOperation({ summary: 'Create a new booking (Authentication required)' })
   @ApiResponse({
     status: 201,
     description: 'Booking created successfully',
-    type: BookingResponseDto,
   })
   async create(
     @Body() createBookingDto: CreateBookingDto,
     @CurrentUser() user: any,
-  ): Promise<BookingResponseDto> {
+  ): Promise<BookingResponse> {
     return this.bookingsService.create(createBookingDto, user.id);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all bookings with filtering' })
+  @Public()
+  @ApiOperation({
+    summary:
+      'Get all bookings with filtering (Public - limited data for non-authenticated users)',
+  })
   @ApiResponse({
     status: 200,
     description: 'Bookings retrieved successfully',
@@ -79,16 +83,19 @@ export class BookingsController {
       vehicleId,
       startDate,
       endDate,
-      userId: user.role === Role.CUSTOMER ? user.id : undefined,
-      userRole: user.role,
+      userId: user?.role === Role.CUSTOMER ? user.id : undefined,
+      userRole: user?.role,
+      isPublic: !user, // Flag to indicate public access
     };
 
     return this.bookingsService.findAll(options);
   }
 
   @Get('my-bookings')
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
   @Roles(Role.CUSTOMER)
-  @ApiOperation({ summary: 'Get current user bookings' })
+  @ApiOperation({ summary: 'Get current user bookings (Authentication required)' })
   @ApiResponse({
     status: 200,
     description: 'User bookings retrieved successfully',
@@ -111,7 +118,8 @@ export class BookingsController {
   }
 
   @Get('check-availability/:vehicleId')
-  @ApiOperation({ summary: 'Check vehicle availability for specific dates' })
+  @Public()
+  @ApiOperation({ summary: 'Check vehicle availability for specific dates (Public)' })
   @ApiResponse({
     status: 200,
     description: 'Availability check completed',
@@ -133,7 +141,8 @@ export class BookingsController {
   }
 
   @Get('calculate-price/:vehicleId')
-  @ApiOperation({ summary: 'Calculate booking price' })
+  @Public()
+  @ApiOperation({ summary: 'Calculate booking price (Public)' })
   @ApiResponse({
     status: 200,
     description: 'Price calculated successfully',
@@ -163,31 +172,32 @@ export class BookingsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get booking by ID' })
+  @Public()
+  @ApiOperation({ summary: 'Get booking by ID (Public - limited data for non-authenticated users)' })
   @ApiResponse({
     status: 200,
     description: 'Booking retrieved successfully',
-    type: BookingResponseDto,
   })
   async findOne(
     @Param('id') id: string,
-    @CurrentUser() user: any,
-  ): Promise<BookingResponseDto> {
-    return this.bookingsService.findOne(id, user.id, user.role);
+    @CurrentUser() user?: any,
+  ): Promise<BookingResponse> {
+    return this.bookingsService.findOne(id, user?.id, user?.role);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update booking details' })
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Update booking details (Authentication required)' })
   @ApiResponse({
     status: 200,
     description: 'Booking updated successfully',
-    type: BookingResponseDto,
   })
   async update(
     @Param('id') id: string,
     @Body() updateBookingDto: UpdateBookingDto,
     @CurrentUser() user: any,
-  ): Promise<BookingResponseDto> {
+  ): Promise<BookingResponse> {
     return this.bookingsService.update(
       id,
       updateBookingDto,
@@ -197,33 +207,35 @@ export class BookingsController {
   }
 
   @Patch(':id/status')
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
   @Roles(Role.ADMIN, Role.AGENT)
   @ApiOperation({ summary: 'Update booking status (Admin/Agent only)' })
   @ApiResponse({
     status: 200,
     description: 'Booking status updated successfully',
-    type: BookingResponseDto,
   })
   async updateStatus(
     @Param('id') id: string,
     @Body() statusUpdateDto: BookingStatusUpdateDto,
     @CurrentUser() user: any,
-  ): Promise<BookingResponseDto> {
+  ): Promise<BookingResponse> {
     return this.bookingsService.updateStatus(id, statusUpdateDto, user.role);
   }
 
   @Post(':id/cancel')
-  @ApiOperation({ summary: 'Cancel a booking' })
+  @ApiBearerAuth()
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Cancel a booking (Authentication required)' })
   @ApiResponse({
     status: 200,
     description: 'Booking cancelled successfully',
-    type: BookingResponseDto,
   })
   async cancel(
     @Param('id') id: string,
     @Body() cancelBookingDto: CancelBookingDto,
     @CurrentUser() user: any,
-  ): Promise<BookingResponseDto> {
+  ): Promise<BookingResponse> {
     return this.bookingsService.cancel(
       id,
       cancelBookingDto,
