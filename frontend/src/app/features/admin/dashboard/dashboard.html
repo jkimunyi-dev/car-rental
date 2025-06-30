@@ -9,7 +9,7 @@
     <!-- Period Selector -->
     <div class="flex space-x-2">
       <button 
-        *ngFor="let period of ['day', 'week', 'month', 'year']"
+        *ngFor="let period of periods"
         (click)="onPeriodChange(period)"
         [class]="selectedPeriod === period ? 
           'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"

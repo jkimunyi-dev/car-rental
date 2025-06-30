@@ -12,6 +12,9 @@ import { AdminUser } from '../../../core/models/admin.models';
   styleUrls: ['./user-management.scss']
 })
 export class UserManagement implements OnInit {
+  // Add Math property
+  Math = Math;
+
   users: AdminUser[] = [];
   isLoading = true;
   selectedUsers: string[] = [];
@@ -95,7 +98,10 @@ export class UserManagement implements OnInit {
     }
   }
 
-  updateUserRole(userId: string, role: string) {
+  updateUserRole(userId: string, event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const role = target.value;
+    
     this.adminService.updateUserRole(userId, role).subscribe({
       next: (updatedUser) => {
         const index = this.users.findIndex(u => u.id === userId);

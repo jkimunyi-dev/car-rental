@@ -174,7 +174,7 @@
             <td class="px-4 py-4">
               <select 
                 [value]="vehicle.status"
-                (change)="updateVehicleStatus(vehicle.id, $event.target.value)"
+                (change)="updateVehicleStatus(vehicle.id, $event)"
                 class="text-sm border border-gray-300 rounded px-2 py-1">
                 <option value="AVAILABLE">Available</option>
                 <option value="RENTED">Rented</option>

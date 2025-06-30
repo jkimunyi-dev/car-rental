@@ -12,6 +12,8 @@ import { AdminVehicle } from '../../../core/models/admin.models';
   styleUrls: ['./vehicle-management.scss']
 })
 export class VehicleManagement implements OnInit {
+  Math = Math;
+  
   vehicles: AdminVehicle[] = [];
   isLoading = true;
   selectedVehicles: string[] = [];
@@ -118,7 +120,10 @@ export class VehicleManagement implements OnInit {
     }
   }
 
-  updateVehicleStatus(vehicleId: string, status: string) {
+  updateVehicleStatus(vehicleId: string, event: Event) {
+    const target = event.target as HTMLSelectElement;
+    const status = target.value;
+    
     this.adminService.updateVehicleStatus(vehicleId, status).subscribe({
       next: (updatedVehicle) => {
         const index = this.vehicles.findIndex(v => v.id === vehicleId);

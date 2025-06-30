@@ -1,11 +1,11 @@
 import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, effect } from '@angular/core';
-import { RouterOutlet, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Auth } from '../../core/services/auth';
 
 @Component({
   selector: 'app-home',
-  imports: [RouterOutlet, CommonModule],
+  imports: [CommonModule], // Remove RouterOutlet
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })

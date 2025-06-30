@@ -14,6 +14,7 @@ export class AdminDashboard implements OnInit {
   analytics: AdminAnalytics | null = null;
   isLoading = true;
   selectedPeriod: 'day' | 'week' | 'month' | 'year' = 'month';
+  periods: ('day' | 'week' | 'month' | 'year')[] = ['day', 'week', 'month', 'year'];
 
   constructor(private adminService: Admin) {}
 

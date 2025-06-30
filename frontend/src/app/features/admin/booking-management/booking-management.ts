@@ -12,6 +12,9 @@ import { AdminBooking } from '../../../core/models/admin.models';
   styleUrls: ['./booking-management.scss']
 })
 export class BookingManagement implements OnInit {
+  // Add Math property
+  Math = Math;
+
   bookings: AdminBooking[] = [];
   isLoading = true;
   
