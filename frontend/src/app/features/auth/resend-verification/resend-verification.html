@@ -1,0 +1,64 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h2>Resend Verification Email</h2>
+      <p>Enter your email address to receive a new verification link</p>
+    </div>
+
+    @if (success()) {
+      <div class="alert alert-success" role="alert">
+        <i class="ri-check-circle-line"></i>
+        {{ success() }}
+        <p class="mt-2 text-sm">Redirecting to login...</p>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-error" role="alert">
+        <i class="ri-error-warning-line"></i>
+        {{ error() }}
+      </div>
+    }
+
+    <form [formGroup]="resendForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          placeholder="Enter your email address"
+          [class.error]="getFieldError('email')"
+        />
+        @if (getFieldError('email')) {
+          <span class="error-message">{{ getFieldError('email') }}</span>
+        }
+      </div>
+
+      <button 
+        type="submit" 
+        class="btn btn-primary btn-full"
+        [disabled]="isLoading() || resendForm.invalid"
+      >
+        @if (isLoading()) {
+          <i class="ri-loader-4-line animate-spin"></i>
+          Sending...
+        } @else {
+          <i class="ri-mail-send-line"></i>
+          Resend Verification Email
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>
+        Remember your password? 
+        <a routerLink="/auth/login">Sign In</a>
+      </p>
+      <p>
+        Don't have an account? 
+        <a routerLink="/auth/register">Sign Up</a>
+      </p>
+    </div>
+  </div>
+</div>

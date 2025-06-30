@@ -9,29 +9,39 @@ import {
   Query,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { 
+  AuthResponseDto, 
+  RegisterResponseDto, 
+  MessageResponseDto 
+} from './dto/auth-response.dto';
 import { Public } from './decorators/public.decorator';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 
+@ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()
   @Post('register')
-  async register(@Body() registerDto: RegisterDto): Promise<AuthResponseDto> {
+  @ApiOperation({ summary: 'Register a new user' })
+  @ApiResponse({ status: 201, type: RegisterResponseDto })
+  async register(@Body() registerDto: RegisterDto): Promise<RegisterResponseDto> {
     return this.authService.register(registerDto);
   }
 
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login user' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
   async login(@Body() loginDto: LoginDto): Promise<AuthResponseDto> {
     return this.authService.login(loginDto);
   }
@@ -39,6 +49,8 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Refresh access token' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
   async refreshTokens(
     @Body('refreshToken') refreshToken: string,
   ): Promise<AuthResponseDto> {
@@ -47,56 +59,72 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body('refreshToken') refreshToken: string): Promise<void> {
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  async logout(@Body('refreshToken') refreshToken: string): Promise<MessageResponseDto> {
     return this.authService.logout(refreshToken);
   }
 
   @Post('logout-all')
   @HttpCode(HttpStatus.OK)
-  async logoutAll(@CurrentUser() user: any): Promise<void> {
+  @ApiOperation({ summary: 'Logout from all devices' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  async logoutAll(@CurrentUser() user: any): Promise<MessageResponseDto> {
     return this.authService.logoutAll(user.id);
   }
 
   @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   async forgotPassword(
     @Body() forgotPasswordDto: ForgotPasswordDto,
-  ): Promise<void> {
+  ): Promise<MessageResponseDto> {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
 
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   async resetPassword(
     @Body() resetPasswordDto: ResetPasswordDto,
-  ): Promise<void> {
+  ): Promise<MessageResponseDto> {
     return this.authService.resetPassword(resetPasswordDto);
   }
 
   @Public()
   @Get('verify-email')
-  async verifyEmail(@Query('token') token: string): Promise<{ message: string }> {
+  @ApiOperation({ summary: 'Verify email address' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
+  async verifyEmail(@Query('token') token: string): Promise<MessageResponseDto> {
     if (!token) {
       throw new BadRequestException('Verification token is required');
     }
-    await this.authService.verifyEmail(token);
-    return { message: 'Email verified successfully' };
+    return this.authService.verifyEmail(token);
   }
 
   @Public()
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Resend email verification' })
+  @ApiResponse({ status: 200, type: MessageResponseDto })
   async resendVerification(
     @Body() resendVerificationDto: ResendVerificationDto,
-  ): Promise<{ message: string }> {
-    await this.authService.resendVerificationEmail(resendVerificationDto.email);
-    return { message: 'Verification email sent successfully' };
+  ): Promise<MessageResponseDto> {
+    return this.authService.resendVerificationEmail(resendVerificationDto.email);
   }
 
   @Get('profile')
+  @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@CurrentUser() user: any) {
-    return user;
+    return {
+      success: true,
+      message: 'Profile retrieved successfully',
+      timestamp: new Date().toISOString(),
+      data: user
+    };
   }
 }

@@ -1,0 +1,345 @@
+<div class="vehicle-management p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Vehicle Management</h1>
+      <p class="text-gray-600">Manage your fleet of vehicles</p>
+    </div>
+    
+    <!-- Actions -->
+    <div class="flex space-x-3">
+      <button 
+        *ngIf="selectedVehicles.length > 0"
+        class="bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
+        Bulk Actions ({{ selectedVehicles.length }})
+      </button>
+      <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        Add Vehicle
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filters.search"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Search vehicles..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Category Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+        <select 
+          [(ngModel)]="filters.category"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option *ngFor="let category of vehicleCategories" [value]="category.value">{{ category.label }}</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select 
+          [(ngModel)]="filters.status"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option *ngFor="let status of vehicleStatuses" [value]="status.value">{{ status.label }}</option>
+        </select>
+      </div>
+
+      <!-- Location Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filters.location"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Filter by location..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Price Range -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Min Price</label>
+        <input 
+          type="number" 
+          [(ngModel)]="filters.minPrice"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Min price..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Clear Filters -->
+      <div class="flex items-end">
+        <button 
+          (click)="filters = { search: '', category: '', status: '', location: '', minPrice: null, maxPrice: null, isActive: null, page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }; onFilterChange()"
+          class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicles Table -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!isLoading" class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left">
+              <input 
+                type="checkbox" 
+                [checked]="selectedVehicles.length === vehicles.length && vehicles.length > 0"
+                (change)="selectAllVehicles()"
+                class="rounded border-gray-300">
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('category')">
+              Category
+              <span *ngIf="filters.sortBy === 'category'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('pricePerDay')">
+              Price/Day
+              <span *ngIf="filters.sortBy === 'pricePerDay'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('createdAt')">
+              Added
+              <span *ngIf="filters.sortBy === 'createdAt'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let vehicle of vehicles" class="hover:bg-gray-50">
+            <td class="px-4 py-4">
+              <input 
+                type="checkbox" 
+                [checked]="selectedVehicles.includes(vehicle.id)"
+                (change)="toggleVehicleSelection(vehicle.id)"
+                class="rounded border-gray-300">
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex items-center">
+                <img *ngIf="vehicle.images && vehicle.images.length > 0" 
+                     [src]="vehicle.images[0]" 
+                     [alt]="vehicle.make + ' ' + vehicle.model"
+                     class="h-12 w-16 rounded-lg object-cover mr-3">
+                <div *ngIf="!vehicle.images || vehicle.images.length === 0" 
+                     class="h-12 w-16 rounded-lg bg-gray-200 flex items-center justify-center mr-3">
+                  <span class="text-gray-400 text-xs">No Image</span>
+                </div>
+                <div>
+                  <div class="text-sm font-medium text-gray-900">
+                    {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year }}
+                  </div>
+                  <div class="text-sm text-gray-500">{{ vehicle.licensePlate }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span [class]="getCategoryColor(vehicle.category)"
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                {{ vehicle.category | titlecase }}
+              </span>
+            </td>
+            <td class="px-4 py-4 text-sm font-medium text-gray-900">
+              ${{ vehicle.pricePerDay | number:'1.2-2' }}
+            </td>
+            <td class="px-4 py-4 text-sm text-gray-900">{{ vehicle.location }}</td>
+            <td class="px-4 py-4">
+              <select 
+                [value]="vehicle.status"
+                (change)="updateVehicleStatus(vehicle.id, $event.target.value)"
+                class="text-sm border border-gray-300 rounded px-2 py-1">
+                <option value="AVAILABLE">Available</option>
+                <option value="RENTED">Rented</option>
+                <option value="MAINTENANCE">Maintenance</option>
+                <option value="INACTIVE">Inactive</option>
+              </select>
+            </td>
+            <td class="px-4 py-4 text-sm text-gray-900">{{ vehicle.createdAt | date:'MMM d, yyyy' }}</td>
+            <td class="px-4 py-4">
+              <div class="flex space-x-2">
+                <button 
+                  (click)="openEditModal(vehicle)"
+                  class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  Edit
+                </button>
+                <button 
+                  (click)="openDeleteModal(vehicle)"
+                  class="text-red-600 hover:text-red-800 text-sm font-medium">
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing {{ (filters.page - 1) * filters.limit + 1 }} to {{ Math.min(filters.page * filters.limit, totalVehicles) }} of {{ totalVehicles }} results
+          </p>
+        </div>
+        <div>
+          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            <button 
+              [disabled]="filters.page === 1"
+              (click)="onPageChange(filters.page - 1)"
+              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              Previous
+            </button>
+            <span 
+              *ngFor="let page of [].constructor(Math.min(totalPages, 5)); let i = index"
+              class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+              [class]="(i + 1) === filters.page ? 
+                'z-10 bg-blue-50 border-blue-500 text-blue-600' : 
+                'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 cursor-pointer'"
+              (click)="onPageChange(i + 1)">
+              {{ i + 1 }}
+            </span>
+            <button 
+              [disabled]="filters.page === totalPages"
+              (click)="onPageChange(filters.page + 1)"
+              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              Next
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div *ngIf="showEditModal && selectedVehicle" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-10 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">
+        Edit Vehicle: {{ selectedVehicle.make }} {{ selectedVehicle.model }}
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Make</label>
+          <input 
+            type="text"
+            [(ngModel)]="editForm.make"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Model</label>
+          <input 
+            type="text"
+            [(ngModel)]="editForm.model"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Year</label>
+          <input 
+            type="number"
+            [(ngModel)]="editForm.year"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Price per Day</label>
+          <input 
+            type="number"
+            [(ngModel)]="editForm.pricePerDay"
+            step="0.01"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+          <select 
+            [(ngModel)]="editForm.category"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            <option *ngFor="let category of vehicleCategories.slice(1)" [value]="category.value">
+              {{ category.label }}
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+          <input 
+            type="text"
+            [(ngModel)]="editForm.location"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+        </div>
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button 
+          (click)="closeEditModal()"
+          class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+        <button 
+          (click)="saveVehicle()"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div *ngIf="showDeleteModal && selectedVehicle" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">Delete Vehicle</h3>
+      <p class="text-sm text-gray-600 mb-4">
+        Are you sure you want to delete {{ selectedVehicle.make }} {{ selectedVehicle.model }}? 
+        This action cannot be undone.
+      </p>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          (click)="closeDeleteModal()"
+          class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+        <button 
+          (click)="deleteVehicle()"
+          class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+          Delete Vehicle
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

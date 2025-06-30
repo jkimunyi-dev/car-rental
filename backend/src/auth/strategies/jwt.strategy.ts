@@ -24,6 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         role: true,
         isActive: true,
         isVerified: true,
+        avatar: true,
       },
     });
 
@@ -31,11 +32,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
-    // Check if user is verified for protected routes
-    if (!user.isVerified) {
-      throw new UnauthorizedException('Email verification required');
-    }
-
+    // Return user with verification status - let route handlers decide
+    // if verification is required for specific endpoints
     return user;
   }
 }

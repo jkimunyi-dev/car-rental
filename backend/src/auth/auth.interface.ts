@@ -1,6 +1,6 @@
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthResponseDto, MessageResponseDto, RegisterResponseDto } from './dto/auth-response.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshToken as PrismaRefreshToken, Prisma } from '@prisma/client';
@@ -11,19 +11,19 @@ import { RefreshToken as PrismaRefreshToken, Prisma } from '@prisma/client';
  */
 export interface IAuthInterface {
   // Authentication Operations
-  register(registerDto: RegisterDto): Promise<AuthResponseDto>;
+  register(registerDto: RegisterDto): Promise<RegisterResponseDto>; // Changed
   login(loginDto: LoginDto): Promise<AuthResponseDto>;
   refreshTokens(refreshToken: string): Promise<AuthResponseDto>;
-  logout(refreshToken: string): Promise<void>;
-  logoutAll(userId: string): Promise<void>;
+  logout(refreshToken: string): Promise<MessageResponseDto>; // Changed
+  logoutAll(userId: string): Promise<MessageResponseDto>; // Changed
 
   // Password Management
-  forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<void>;
-  resetPassword(resetPasswordDto: ResetPasswordDto): Promise<void>;
+  forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<MessageResponseDto>; // Changed
+  resetPassword(resetPasswordDto: ResetPasswordDto): Promise<MessageResponseDto>; // Changed
 
   // Email Verification
-  verifyEmail(token: string): Promise<void>;
-  resendVerificationEmail(email: string): Promise<void>; // NEW METHOD
+  verifyEmail(token: string): Promise<MessageResponseDto>; // Changed
+  resendVerificationEmail(email: string): Promise<MessageResponseDto>; // Changed
 }
 
 /**
