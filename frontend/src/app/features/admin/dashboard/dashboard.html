@@ -1,0 +1,154 @@
+<div class="admin-dashboard p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+      <p class="text-gray-600">Overview of your car rental business</p>
+    </div>
+    
+    <!-- Period Selector -->
+    <div class="flex space-x-2">
+      <button 
+        *ngFor="let period of ['day', 'week', 'month', 'year']"
+        (click)="onPeriodChange(period)"
+        [class]="selectedPeriod === period ? 
+          'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+        class="px-4 py-2 rounded-lg border border-gray-300 capitalize transition-colors">
+        {{ period }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Analytics Content -->
+  <div *ngIf="!isLoading && analytics">
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Users -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Users</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalUsers }}</p>
+          </div>
+          <div class="flex items-center">
+            <span [class]="getGrowthColor(analytics.userGrowth)" class="text-sm font-medium">
+              {{ getGrowthIcon(analytics.userGrowth) }} {{ analytics.userGrowth | number:'1.1-1' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Vehicles -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Vehicles</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalVehicles }}</p>
+          </div>
+          <div class="flex items-center">
+            <span [class]="getGrowthColor(analytics.vehicleGrowth)" class="text-sm font-medium">
+              {{ getGrowthIcon(analytics.vehicleGrowth) }} {{ analytics.vehicleGrowth | number:'1.1-1' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Bookings -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Bookings</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalBookings }}</p>
+          </div>
+          <div class="flex items-center">
+            <span [class]="getGrowthColor(analytics.bookingGrowth)" class="text-sm font-medium">
+              {{ getGrowthIcon(analytics.bookingGrowth) }} {{ analytics.bookingGrowth | number:'1.1-1' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Revenue -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Revenue</p>
+            <p class="text-3xl font-bold text-gray-900">${{ analytics.totalRevenue | number:'1.2-2' }}</p>
+          </div>
+          <div class="flex items-center">
+            <span [class]="getGrowthColor(analytics.revenueGrowth)" class="text-sm font-medium">
+              {{ getGrowthIcon(analytics.revenueGrowth) }} {{ analytics.revenueGrowth | number:'1.1-1' }}%
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts and Tables Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- Users by Role -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Users by Role</h3>
+        <div class="space-y-3">
+          <div *ngFor="let role of analytics.usersByRole | keyvalue" class="flex justify-between items-center">
+            <span class="capitalize text-gray-600">{{ role.key.toLowerCase() }}</span>
+            <span class="font-semibold">{{ role.value }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bookings by Status -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Bookings by Status</h3>
+        <div class="space-y-3">
+          <div *ngFor="let status of analytics.bookingsByStatus | keyvalue" class="flex justify-between items-center">
+            <span class="capitalize text-gray-600">{{ status.key.toLowerCase() }}</span>
+            <span class="font-semibold">{{ status.value }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Performers -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Top Vehicles -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Performing Vehicles</h3>
+        <div class="space-y-4">
+          <div *ngFor="let vehicle of analytics.topVehicles" class="flex justify-between items-center p-3 bg-gray-50 rounded">
+            <div>
+              <p class="font-medium">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
+              <p class="text-sm text-gray-600">{{ vehicle.bookingCount }} bookings</p>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold">${{ vehicle.totalRevenue | number:'1.2-2' }}</p>
+              <p class="text-sm text-gray-600">★ {{ vehicle.averageRating | number:'1.1-1' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Customers -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Customers</h3>
+        <div class="space-y-4">
+          <div *ngFor="let customer of analytics.topCustomers" class="flex justify-between items-center p-3 bg-gray-50 rounded">
+            <div>
+              <p class="font-medium">{{ customer.firstName }} {{ customer.lastName }}</p>
+              <p class="text-sm text-gray-600">{{ customer.bookingCount }} bookings</p>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold">${{ customer.totalSpent | number:'1.2-2' }}</p>
+              <p class="text-sm text-gray-600">Since {{ customer.joinDate | date:'MMM yyyy' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

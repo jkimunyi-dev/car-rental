@@ -1,1 +1,226 @@
-<p>booking-list works!</p>
+<div class="booking-list p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">My Bookings</h1>
+      <p class="text-gray-600">Manage your vehicle reservations</p>
+    </div>
+    <button 
+      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+      routerLink="/vehicles">
+      Book New Vehicle
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filters.search"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Search bookings..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select 
+          [(ngModel)]="filters.status"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option [ngValue]="undefined">All Status</option>
+          <option *ngFor="let status of bookingStatuses" [value]="status">{{ status }}</option>
+        </select>
+      </div>
+
+      <!-- Clear Filters -->
+      <div class="flex items-end">
+        <button 
+          (click)="filters = { page: 1, limit: 10, status: undefined, search: '' }; onFilterChange()"
+          class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+          Clear Filters
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+    {{ error }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Bookings Grid -->
+  <div *ngIf="!isLoading" class="grid gap-6">
+    <!-- No bookings message -->
+    <div *ngIf="bookings.length === 0" class="text-center py-12">
+      <div class="text-gray-400 text-xl mb-4">🚗</div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No bookings found</h3>
+      <p class="text-gray-600 mb-4">You haven't made any bookings yet.</p>
+      <button 
+        routerLink="/vehicles"
+        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        Browse Vehicles
+      </button>
+    </div>
+
+    <!-- Booking Cards -->
+    <div *ngFor="let booking of bookings" class="bg-white rounded-lg shadow-md overflow-hidden">
+      <div class="p-6">
+        <!-- Booking Header -->
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-900">
+              {{ booking.vehicle?.make }} {{ booking.vehicle?.model }} ({{ booking.vehicle?.year }})
+            </h3>
+            <p class="text-sm text-gray-600">Booking ID: #{{ booking.id.substring(0, 8) }}</p>
+          </div>
+          <span [class]="getStatusColor(booking.status)" 
+                class="px-2 py-1 rounded-full text-xs font-medium">
+            {{ booking.status }}
+          </span>
+        </div>
+
+        <!-- Booking Details -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <p class="text-sm text-gray-600">Pickup Date</p>
+            <p class="font-medium">{{ formatDate(booking.startDate) }}</p>
+            <p *ngIf="booking.startTime" class="text-sm text-gray-600">{{ booking.startTime }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Return Date</p>
+            <p class="font-medium">{{ formatDate(booking.endDate) }}</p>
+            <p *ngIf="booking.endTime" class="text-sm text-gray-600">{{ booking.endTime }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Duration</p>
+            <p class="font-medium">
+              {{ booking.totalDays }} days
+              <span *ngIf="booking.totalHours">({{ booking.totalHours }} hours)</span>
+            </p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Total Amount</p>
+            <p class="font-medium text-lg text-green-600">{{ formatCurrency(booking.totalAmount) }}</p>
+          </div>
+        </div>
+
+        <!-- Location Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="text-sm text-gray-600">Pickup Location</p>
+            <p class="font-medium">{{ booking.pickupLocation }}</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-600">Return Location</p>
+            <p class="font-medium">{{ booking.dropoffLocation || booking.pickupLocation }}</p>
+          </div>
+        </div>
+
+        <!-- Cancellation Reason (if cancelled) -->
+        <div *ngIf="booking.cancellationReason" class="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p class="text-sm font-medium text-red-800">Cancellation Reason:</p>
+          <p class="text-sm text-red-700">{{ booking.cancellationReason }}</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex justify-end space-x-3">
+          <button 
+            [routerLink]="['/bookings', booking.id]"
+            class="bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 transition-colors">
+            View Details
+          </button>
+          <button 
+            *ngIf="booking.isModifiable"
+            class="bg-blue-100 text-blue-700 px-4 py-2 rounded hover:bg-blue-200 transition-colors">
+            Modify
+          </button>
+          <button 
+            *ngIf="booking.isCancellable"
+            (click)="openCancelModal(booking)"
+            class="bg-red-100 text-red-700 px-4 py-2 rounded hover:bg-red-200 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!isLoading && bookings.length > 0" class="mt-6 flex justify-center">
+    <nav class="flex items-center space-x-2">
+      <button 
+        (click)="onPageChange((filters.page || 1) - 1)"
+        [disabled]="(filters.page || 1) <= 1"
+        class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+        Previous
+      </button>
+      
+      <span class="px-3 py-2 text-sm text-gray-700">
+        Page {{ filters.page || 1 }} of {{ totalPages }}
+      </span>
+      
+      <button 
+        (click)="onPageChange((filters.page || 1) + 1)"
+        [disabled]="(filters.page || 1) >= totalPages"
+        class="px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+        Next
+      </button>
+    </nav>
+  </div>
+</div>
+
+<!-- Cancel Booking Modal -->
+<div *ngIf="showCancelModal && selectedBooking" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">
+        Cancel Booking #{{ selectedBooking.id.substring(0, 8) }}
+      </h3>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Cancellation Reason *</label>
+        <textarea 
+          [(ngModel)]="cancellationReason"
+          rows="3"
+          placeholder="Please provide a reason for cancellation..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </textarea>
+      </div>
+
+      <div class="mb-4">
+        <label class="flex items-center">
+          <input 
+            type="checkbox"
+            [(ngModel)]="requestRefund"
+            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+          <span class="ml-2 text-sm text-gray-700">Request refund (subject to cancellation policy)</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button 
+          (click)="closeCancelModal()"
+          class="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition-colors">
+          Cancel
+        </button>
+        <button 
+          (click)="cancelBooking()"
+          [disabled]="!cancellationReason.trim()"
+          class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          Confirm Cancellation
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

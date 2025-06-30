@@ -1,0 +1,241 @@
+<div class="booking-management p-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900">Booking Management</h1>
+      <p class="text-gray-600">Manage customer bookings and reservations</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow p-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+        <input 
+          type="text" 
+          [(ngModel)]="filters.search"
+          (ngModelChange)="onFilterChange()"
+          placeholder="Search bookings..."
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+        <select 
+          [(ngModel)]="filters.status"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <option *ngFor="let status of bookingStatuses" [value]="status.value">{{ status.label }}</option>
+        </select>
+      </div>
+
+      <!-- Date From -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+        <input 
+          type="date" 
+          [(ngModel)]="filters.dateFrom"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Date To -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+        <input 
+          type="date" 
+          [(ngModel)]="filters.dateTo"
+          (ngModelChange)="onFilterChange()"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+
+      <!-- Clear Filters -->
+      <div class="flex items-end">
+        <button 
+          (click)="filters = { search: '', status: '', dateFrom: '', dateTo: '', page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc' }; onFilterChange()"
+          class="w-full bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookings Table -->
+  <div class="bg-white rounded-lg shadow overflow-hidden">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!isLoading" class="overflow-x-auto">
+      <table class="w-full">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('id')">
+              Booking ID
+              <span *ngIf="filters.sortBy === 'id'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('startDate')">
+              Rental Period
+              <span *ngIf="filters.sortBy === 'startDate'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                (click)="onSort('totalAmount')">
+              Amount
+              <span *ngIf="filters.sortBy === 'totalAmount'">
+                {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr *ngFor="let booking of bookings" class="hover:bg-gray-50">
+            <td class="px-4 py-4 text-sm font-medium text-gray-900">
+              #{{ booking.id.substring(0, 8) }}
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm font-medium text-gray-900">
+                {{ booking.user.firstName }} {{ booking.user.lastName }}
+              </div>
+              <div class="text-sm text-gray-500">{{ booking.user.email }}</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm font-medium text-gray-900">
+                {{ booking.vehicle.make }} {{ booking.vehicle.model }}
+              </div>
+              <div class="text-sm text-gray-500">{{ booking.vehicle.year }}</div>
+            </td>
+            <td class="px-4 py-4">
+              <div class="text-sm text-gray-900">
+                {{ booking.startDate | date:'MMM d, yyyy' }} - {{ booking.endDate | date:'MMM d, yyyy' }}
+              </div>
+            </td>
+            <td class="px-4 py-4 text-sm font-medium text-gray-900">
+              ${{ booking.totalAmount | number:'1.2-2' }}
+            </td>
+            <td class="px-4 py-4">
+              <span [class]="getStatusColor(booking.status)"
+                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
+                {{ booking.status | titlecase }}
+              </span>
+            </td>
+            <td class="px-4 py-4">
+              <button 
+                *ngIf="getAvailableActions(booking).length > 0"
+                (click)="openActionModal(booking)"
+                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                Manage
+              </button>
+              <span *ngIf="getAvailableActions(booking).length === 0" class="text-gray-400 text-sm">
+                No actions
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-700">
+            Showing {{ (filters.page - 1) * filters.limit + 1 }} to {{ Math.min(filters.page * filters.limit, totalBookings) }} of {{ totalBookings }} results
+          </p>
+        </div>
+        <div>
+          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            <button 
+              [disabled]="filters.page === 1"
+              (click)="onPageChange(filters.page - 1)"
+              class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              Previous
+            </button>
+            <span 
+              *ngFor="let page of [].constructor(Math.min(totalPages, 5)); let i = index"
+              class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
+              [class]="(i + 1) === filters.page ? 
+                'z-10 bg-blue-50 border-blue-500 text-blue-600' : 
+                'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 cursor-pointer'"
+              (click)="onPageChange(i + 1)">
+              {{ i + 1 }}
+            </span>
+            <button 
+              [disabled]="filters.page === totalPages"
+              (click)="onPageChange(filters.page + 1)"
+              class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+              Next
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Modal -->
+<div *ngIf="showActionModal && selectedBooking" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+  <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div class="mt-3">
+      <h3 class="text-lg font-medium text-gray-900 mb-4">
+        Manage Booking #{{ selectedBooking.id.substring(0, 8) }}
+      </h3>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Action</label>
+        <select [(ngModel)]="bookingAction" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+          <option value="">Select Action</option>
+          <option *ngFor="let action of getAvailableActions(selectedBooking)" [value]="action">
+            {{ action | titlecase }}
+          </option>
+        </select>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+        <input 
+          type="text"
+          [(ngModel)]="actionReason"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2"
+          placeholder="Enter reason for this action...">
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+        <textarea 
+          [(ngModel)]="actionNotes"
+          rows="3"
+          class="w-full border border-gray-300 rounded-lg px-3 py-2"
+          placeholder="Additional notes..."></textarea>
+      </div>
+
+      <div class="flex justify-end space-x-3">
+        <button 
+          (click)="closeActionModal()"
+          class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+          Cancel
+        </button>
+        <button 
+          (click)="executeBookingAction()"
+          [disabled]="!bookingAction"
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          Execute Action
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

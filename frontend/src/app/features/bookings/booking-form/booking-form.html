@@ -1,0 +1,210 @@
+<div class="booking-form max-w-4xl mx-auto p-6">
+  <div class="bg-white rounded-lg shadow-lg">
+    <div class="p-6 border-b border-gray-200">
+      <h1 class="text-2xl font-bold text-gray-900">Book Your Vehicle</h1>
+      <p class="text-gray-600">Complete your reservation details</p>
+    </div>
+
+    <form [formGroup]="bookingForm" (ngSubmit)="onSubmit()" class="p-6">
+      <!-- Error Message -->
+      <div *ngIf="error" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        {{ error }}
+      </div>
+
+      <!-- Availability Warning -->
+      <div *ngIf="availability && !availability.available" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <p class="font-medium">Vehicle not available for selected dates</p>
+        <p class="text-sm">Please choose different dates or check conflicts.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left Column - Booking Details -->
+        <div class="space-y-6">
+          <!-- Date Selection -->
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Date *</label>
+              <input 
+                type="date" 
+                formControlName="startDate"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Return Date *</label>
+              <input 
+                type="date" 
+                formControlName="endDate"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+          </div>
+
+          <!-- Hourly Booking Option -->
+          <div>
+            <label class="flex items-center">
+              <input 
+                type="checkbox" 
+                formControlName="isHourlyBooking"
+                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <span class="ml-2 text-sm text-gray-700">This is an hourly booking</span>
+            </label>
+          </div>
+
+          <!-- Time Selection (shown only for hourly bookings) -->
+          <div *ngIf="bookingForm.get('isHourlyBooking')?.value" class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Start Time</label>
+              <input 
+                type="time" 
+                formControlName="startTime"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">End Time</label>
+              <input 
+                type="time" 
+                formControlName="endTime"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+          </div>
+
+          <!-- Location -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Location *</label>
+            <input 
+              type="text" 
+              formControlName="pickupLocation"
+              placeholder="Enter pickup location"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Return Location</label>
+            <input 
+              type="text" 
+              formControlName="dropoffLocation"
+              placeholder="Enter return location (optional - defaults to pickup location)"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <!-- Coupon Code -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
+            <input 
+              type="text" 
+              formControlName="couponCode"
+              placeholder="Enter coupon code (optional)"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Special Notes</label>
+            <textarea 
+              formControlName="notes"
+              rows="3"
+              placeholder="Any special requests or notes..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </textarea>
+          </div>
+        </div>
+
+        <!-- Right Column - Pricing Summary -->
+        <div class="space-y-6">
+          <!-- Pricing Breakdown -->
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Pricing Summary</h3>
+            
+            <div *ngIf="isCalculatingPrice" class="flex justify-center items-center h-32">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+
+            <div *ngIf="pricing && !isCalculatingPrice" class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Base Price:</span>
+                <span class="font-medium">{{ formatCurrency(pricing.basePrice) }}</span>
+              </div>
+              
+              <div *ngIf="pricing.totalDays" class="flex justify-between text-sm text-gray-500">
+                <span>{{ pricing.totalDays }} days × {{ formatCurrency(pricing.pricePerDay) }}/day</span>
+              </div>
+              
+              <div *ngIf="pricing.totalHours" class="flex justify-between text-sm text-gray-500">
+                <span>{{ pricing.totalHours }} hours × {{ formatCurrency(pricing.pricePerHour!) }}/hour</span>
+              </div>
+
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal:</span>
+                <span class="font-medium">{{ formatCurrency(pricing.subtotal) }}</span>
+              </div>
+
+              <div class="flex justify-between">
+                <span class="text-gray-600">Taxes & Fees:</span>
+                <span class="font-medium">{{ formatCurrency(pricing.taxes + pricing.fees) }}</span>
+              </div>
+
+              <div class="flex justify-between">
+                <span class="text-gray-600">Discount:</span>
+                <span class="font-medium text-green-600">-{{ formatCurrency(pricing.discount) }}</span>
+              </div>
+
+              <div *ngIf="pricing.couponDiscount && pricing.couponDiscount > 0" class="flex justify-between text-green-600">
+                <span>Coupon Discount:</span>
+                <span class="font-medium">-{{ formatCurrency(pricing.couponDiscount) }}</span>
+              </div>
+
+              <hr class="my-3">
+
+              <div class="flex justify-between text-lg font-bold">
+                <span>Total:</span>
+                <span>{{ formatCurrency(pricing.totalAmount) }}</span>
+              </div>
+            </div>
+
+            <div *ngIf="!pricing && !isCalculatingPrice" class="text-center text-gray-500 py-8">
+              Enter booking details to see pricing
+            </div>
+          </div>
+
+          <!-- Availability Status -->
+          <div *ngIf="availability" class="p-4 rounded-lg" 
+               [class]="availability.available ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <span *ngIf="availability.available" class="text-green-600">✓</span>
+                <span *ngIf="!availability.available" class="text-red-600">✗</span>
+              </div>
+              <div class="ml-3">
+                <p class="font-medium" [class]="availability.available ? 'text-green-800' : 'text-red-800'">
+                  {{ availability.available ? 'Vehicle Available' : 'Vehicle Not Available' }}
+                </p>
+                <p *ngIf="!availability.available" class="text-sm text-red-700">
+                  Please select different dates
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="mt-8 flex justify-end space-x-4">
+        <button 
+          type="button"
+          (click)="router.navigate(['/vehicles'])"
+          class="bg-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-400 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="submit"
+          [disabled]="!bookingForm.valid || !availability?.available || isLoading"
+          class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <span *ngIf="isLoading" class="inline-flex items-center">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            Creating Booking...
+          </span>
+          <span *ngIf="!isLoading">Complete Booking</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

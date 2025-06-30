@@ -8,6 +8,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/home/home').then(m => m.Home)
   },
   {
+    path: 'bookings',
+    loadChildren: () => import('./features/bookings/bookings-module').then(m => m.BookingsModule)
+  },
+  {
     path: 'auth',
     canActivate: [UnauthGuard],
     children: [
