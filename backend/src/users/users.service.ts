@@ -101,7 +101,7 @@ export class UsersService {
           ? new Date(createAgentDto.dateOfBirth)
           : null,
         role: Role.AGENT,
-        isVerified: false, // Changed: Agents should also verify their email
+        isVerified: false,
         isActive: true,
       },
       select: {
@@ -113,6 +113,7 @@ export class UsersService {
         role: true,
         isVerified: true,
         isActive: true,
+        avatar: true,
         createdAt: true,
       },
     });
@@ -281,23 +282,42 @@ export class UsersService {
   }
 
   async uploadAvatar(userId: string, file: Express.Multer.File) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({ 
+      where: { id: userId },
+      select: { 
+        id: true, 
+        avatar: true
+        // avatarPublicId: true // Temporarily commented out
+      }
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     try {
-      // Upload to Cloudinary
+      // Delete old avatar if exists - temporarily disabled
+      // if (user.avatarPublicId) {
+      //   try {
+      //     await this.uploadService.deleteImage(user.avatarPublicId);
+      //   } catch (deleteError) {
+      //     console.warn('Failed to delete old avatar:', deleteError);
+      //   }
+      // }
+
+      // Upload new avatar to Cloudinary
       const uploadResult = (await this.uploadService.uploadImage(
         file,
-        'users/avatars',
+        'users/avatars'
       )) as CloudinaryUploadResult;
 
-      // Update user avatar
+      // Update user avatar in database
       const updatedUser = await this.prisma.user.update({
         where: { id: userId },
-        data: { avatar: uploadResult.secure_url },
+        data: { 
+          avatar: uploadResult.secure_url
+          // avatarPublicId: uploadResult.public_id // Temporarily commented out
+        },
       });
 
       // Log activity
@@ -305,11 +325,17 @@ export class UsersService {
         userId,
         'AVATAR_UPDATED',
         'User updated their avatar',
+        {
+          // oldPublicId: user.avatarPublicId, // Temporarily commented out
+          newPublicId: uploadResult.public_id,
+          imageUrl: uploadResult.secure_url
+        }
       );
 
       return {
         message: 'Avatar uploaded successfully',
         avatarUrl: updatedUser.avatar,
+        publicId: uploadResult.public_id,
       };
     } catch (uploadError) {
       console.error('Upload error:', uploadError);
@@ -317,55 +343,78 @@ export class UsersService {
     }
   }
 
-  async changePassword(
-    userId: string,
-    changePasswordDto: ChangePasswordDto,
-  ): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+  async deleteAvatar(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        id: true, 
+        avatar: true
+        // avatarPublicId: true // Temporarily commented out
+      }
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await bcrypt.compare(
-      changePasswordDto.currentPassword,
-      user.password,
-    );
-
-    if (!isCurrentPasswordValid) {
-      throw new UnauthorizedException('Current password is incorrect');
+    if (!user.avatar) {
+      throw new BadRequestException('User has no avatar to delete');
     }
 
-    // Hash new password
-    const hashedNewPassword = await bcrypt.hash(
-      changePasswordDto.newPassword,
-      12,
-    );
+    try {
+      // For now, we'll skip Cloudinary deletion since we don't have publicId
+      // await this.uploadService.deleteImage(user.avatarPublicId);
 
-    // Update password
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedNewPassword },
-    });
+      // Update user in database
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { 
+          avatar: null
+          // avatarPublicId: null // Temporarily commented out
+        },
+      });
 
-    // Log activity
-    await this.logActivity(
-      userId,
-      'PASSWORD_CHANGED',
-      'User changed their password',
-    );
+      // Log activity
+      await this.logActivity(
+        userId,
+        'AVATAR_DELETED',
+        'User deleted their avatar',
+        {
+          // deletedPublicId: user.avatarPublicId, // Temporarily commented out
+          deletedUrl: user.avatar
+        }
+      );
 
-    // Logout all sessions (remove all refresh tokens)
-    await this.prisma.refreshToken.deleteMany({ where: { userId } });
+      return {
+        message: 'Avatar deleted successfully',
+      };
+    } catch (error) {
+      console.error('Delete avatar error:', error);
+      throw new BadRequestException('Failed to delete avatar');
+    }
   }
 
   async remove(id: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({ 
+      where: { id },
+      select: { 
+        id: true
+        // avatarPublicId: true // Temporarily commented out
+      }
+    });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
+
+    // Delete avatar from Cloudinary if exists - temporarily disabled
+    // if (user.avatarPublicId) {
+    //   try {
+    //     await this.uploadService.deleteImage(user.avatarPublicId);
+    //   } catch (error) {
+    //     console.warn('Failed to delete user avatar during account deletion:', error);
+    //   }
+    // }
 
     await this.prisma.user.delete({ where: { id } });
 
@@ -492,6 +541,7 @@ export class UsersService {
           role: true,
           isActive: true,
           isVerified: true,
+          avatar: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -513,6 +563,54 @@ export class UsersService {
         hasPrev: page > 1,
       },
     };
+  }
+
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, password: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      12,
+    );
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedNewPassword },
+    });
+
+    // Log activity
+    await this.logActivity(
+      userId,
+      'PASSWORD_CHANGED',
+      'User changed their password',
+    );
+
+    // Remove all refresh tokens to force re-login
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
   }
 
   private async logActivity(
@@ -539,7 +637,7 @@ export class UsersService {
 
   private formatUserResponse(user: any): UserResponseDto {
     // Destructure to remove password and other sensitive data
-    const { password: _password, ...userWithoutPassword } = user;
+    const { password: _password, avatarPublicId: _avatarPublicId, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 }

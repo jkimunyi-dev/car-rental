@@ -2,8 +2,11 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadService } from '../upload/upload.service';
+import * as bcrypt from 'bcryptjs';
 import {
   IAdminService,
   IAdminAnalytics,
@@ -33,7 +36,10 @@ import { BookingWithDetails } from '../bookings/booking.interface';
 
 @Injectable()
 export class AdminService implements IAdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+  ) {}
 
   async getAnalytics(
     period: 'day' | 'week' | 'month' | 'year' = 'month',
@@ -1250,5 +1256,206 @@ export class AdminService implements IAdminService {
         { feature: 'Profile Management', usage: 45 },
       ],
     };
+  }
+
+  async createUser(
+    userData: any,
+    avatarFile?: Express.Multer.File,
+  ): Promise<SafeUser> {
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: userData.email }, { phone: userData.phone }],
+      },
+    });
+
+    if (existingUser) {
+      throw new ConflictException(
+        'User with this email or phone already exists',
+      );
+    }
+
+    let avatarUrl: string | undefined;
+    let avatarPublicId: string | undefined;
+
+    // Handle avatar upload if provided
+    if (avatarFile) {
+      try {
+        console.log('Uploading avatar for new user:', {
+          filename: avatarFile.originalname,
+          size: avatarFile.size,
+          mimetype: avatarFile.mimetype,
+        });
+
+        const uploadResult = await this.uploadService.uploadImage(
+          avatarFile,
+          'users/avatars'
+        );
+
+        avatarUrl = uploadResult.secure_url;
+        avatarPublicId = uploadResult.public_id;
+
+        console.log('Avatar upload successful:', { avatarUrl, avatarPublicId });
+      } catch (uploadError) {
+        console.error('Avatar upload failed during user creation:', uploadError);
+        // Continue with user creation without avatar
+        console.log('Continuing user creation without avatar');
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
+
+    // Create user
+    const user = await this.prisma.user.create({
+      data: {
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+        role: userData.role,
+        dateOfBirth: userData.dateOfBirth ? new Date(userData.dateOfBirth) : null,
+        licenseNumber: userData.licenseNumber,
+        address: userData.address,
+        city: userData.city,
+        country: userData.country,
+        zipCode: userData.zipCode,
+        avatar: avatarUrl,
+        // avatarPublicId: avatarPublicId, // Temporarily commented out
+        isActive: true,
+        isVerified: false,
+      },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        avatar: true,
+        address: true,
+        city: true,
+        country: true,
+        zipCode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return user as SafeUser;
+  }
+
+  async updateUserAvatar(
+    userId: string,
+    avatarFile: Express.Multer.File,
+  ): Promise<SafeUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete old avatar if exists
+    if (user.avatar && user.avatarPublicId) {
+      try {
+        await this.uploadService.deleteImage(user.avatar);
+      } catch (error) {
+        console.error('Failed to delete old avatar:', error);
+      }
+    }
+
+    // Upload new avatar
+    let avatar: string | null = null;
+    let avatarPublicId: string | null = null;
+
+    try {
+      const uploadResult = await this.uploadService.uploadImage(
+        avatarFile,
+        'users/avatars',
+        [
+          { width: 200, height: 200, crop: 'fill', gravity: 'face' },
+          { quality: 'auto' },
+          { format: 'webp' },
+        ],
+      );
+      avatar = uploadResult.secure_url;
+      avatarPublicId = uploadResult.public_id;
+    } catch (error) {
+      throw new BadRequestException(`Avatar upload failed: ${error.message}`);
+    }
+
+    // Update user
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar, avatarPublicId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        avatar: true,
+        address: true,
+        city: true,
+        country: true,
+        zipCode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser as SafeUser;
+  }
+
+  async deleteUserAvatar(userId: string): Promise<SafeUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Delete avatar from Cloudinary if exists
+    if (user.avatar && user.avatarPublicId) {
+      try {
+        await this.uploadService.deleteImage(user.avatar);
+      } catch (error) {
+        console.error('Failed to delete avatar:', error);
+      }
+    }
+
+    // Update user to remove avatar
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: null, avatarPublicId: null },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        isVerified: true,
+        avatar: true,
+        address: true,
+        city: true,
+        country: true,
+        zipCode: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return updatedUser as SafeUser;
   }
 }

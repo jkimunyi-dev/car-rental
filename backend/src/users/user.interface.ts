@@ -29,6 +29,8 @@ export type UpdateProfileData = Pick<
   | 'city'
   | 'country'
   | 'zipCode'
+  | 'avatar'
+  // | 'avatarPublicId' // Temporarily commented out
 >;
 
 // Use Prisma's select for specific user data
@@ -123,6 +125,34 @@ export interface UploadedFile {
 export interface AvatarUploadResponse {
   message: string;
   avatarUrl: string;
+  publicId: string;
+}
+
+// Enhanced Cloudinary upload result interface
+export interface CloudinaryUploadResult {
+  secure_url: string;
+  public_id: string;
+  width: number;
+  height: number;
+  bytes: number;
+  format: string;
+  resource_type: string;
+  created_at: string;
+  version: number;
+  type: string;
+  url: string;
+  [key: string]: any;
+}
+
+// Image data interface
+export interface ImageData {
+  url: string;
+  publicId: string;
+  alt?: string;
+  width?: number;
+  height?: number;
+  bytes?: number;
+  format?: string;
 }
 
 // Service method response interfaces
@@ -260,13 +290,6 @@ export interface ValidationError {
   field: string;
   message: string;
   value?: any;
-}
-
-// Cloudinary upload result interface
-export interface CloudinaryUploadResult {
-  secure_url: string;
-  public_id: string;
-  [key: string]: any;
 }
 
 // Repository interface (for database operations)

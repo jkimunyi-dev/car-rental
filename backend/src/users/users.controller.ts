@@ -27,9 +27,9 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Roles } from '../auth/decorators/roles.decorator'; // Fix: Use auth decorators
+import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { RolesGuard } from '../auth/guards/roles.guard'; // Fix: Use auth guards
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
@@ -128,7 +128,27 @@ export class UsersController {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
+    
+    // Validate file type
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Invalid file type. Only JPEG, PNG, and WebP are allowed.');
+    }
+
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('File size too large. Maximum size is 5MB.');
+    }
+
     return this.usersService.uploadAvatar(user.id, file);
+  }
+
+  @Delete('profile/avatar')
+  @ApiOperation({ summary: 'Delete user avatar' })
+  @ApiResponse({ status: 200, description: 'Avatar deleted successfully' })
+  async deleteAvatar(@CurrentUser() user: any) {
+    return this.usersService.deleteAvatar(user.id);
   }
 
   @Patch('change-password')
@@ -220,7 +240,7 @@ export class UsersController {
     return this.usersService.updateUserRole(userId, updateRoleDto.role);
   }
 
-  @Get('agents')
+  @Get('role/agents')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Get all agent users' })
   async getAgents(@Query() query: PaginationDto) {

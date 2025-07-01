@@ -3,13 +3,18 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
   HttpStatus,
   HttpCode,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -27,6 +32,8 @@ import {
   UpdateDisputeDto,
   UpdateSystemSettingDto,
   GenerateReportDto,
+  CreateUserDto,
+  UpdateUserAvatarDto,
 } from './dto/admin.dto';
 
 @Controller('admin')
@@ -194,6 +201,51 @@ export class AdminController {
       success: true,
       message: 'Report generated successfully',
       data: report,
+    };
+  }
+
+  /**
+   * User Creation and Avatar Management
+   */
+  @Post('users')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+    @UploadedFile() avatar?: Express.Multer.File,
+  ) {
+    const user = await this.adminService.createUser(createUserDto, avatar);
+    return {
+      success: true,
+      message: 'User created successfully',
+      data: user,
+    };
+  }
+
+  @Put('users/:id/avatar')
+  @UseInterceptors(FileInterceptor('avatar'))
+  async updateUserAvatar(
+    @Param('id') userId: string,
+    @UploadedFile() avatar: Express.Multer.File,
+  ) {
+    if (!avatar) {
+      throw new BadRequestException('Avatar file is required');
+    }
+
+    const user = await this.adminService.updateUserAvatar(userId, avatar);
+    return {
+      success: true,
+      message: 'User avatar updated successfully',
+      data: user,
+    };
+  }
+
+  @Delete('users/:id/avatar')
+  async deleteUserAvatar(@Param('id') userId: string) {
+    const user = await this.adminService.deleteUserAvatar(userId);
+    return {
+      success: true,
+      message: 'User avatar deleted successfully',
+      data: user,
     };
   }
 }

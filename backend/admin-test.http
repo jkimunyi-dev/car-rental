@@ -2,7 +2,7 @@
 
 ### Variables
 @baseUrl = http://localhost:3000/api
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzA2MjM0LCJleHAiOjE3NTEzMDk4MzR9.IgPnVlLUk_g6OCw2sB00OHk7CLzPSe7ZBdBMJi9JSVg
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzU5OTQ5LCJleHAiOjE3NTEzNjM1NDl9.2kSkAH2-BYVwv-M7QdTQvAR2nvLElNy-qSKxIBWdHPk
 
 ### 1. Get Analytics
 GET {{baseUrl}}/admin/analytics?period=month
@@ -11,39 +11,155 @@ Content-Type: application/json
 
 ###
 
-### 2. Get Analytics - Weekly
-GET {{baseUrl}}/admin/analytics?period=week
+### 2. Create User with Avatar (Form Data) - FIXED
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+john.doe@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+John
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Doe
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="phone"
+
++1234567890
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="role"
+
+CUSTOMER
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="address"
+
+123 Main Street
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="city"
+
+New York
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="country"
+
+USA
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="zipCode"
+
+10001
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="user-avatar.jpeg"
+Content-Type: image/jpeg
+
+< /home/jimmie/github/teach2give/car-rental/backend/public/assets/user-avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+
+### 3. Create User without Avatar
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "jane.smith@example.com",
+  "password": "password123",
+  "firstName": "Jane",
+  "lastName": "Smith",
+  "phone": "+1987654321",
+  "role": "AGENT",
+  "address": "456 Oak Avenue",
+  "city": "Los Angeles",
+  "country": "USA",
+  "zipCode": "90210"
+}
+
+###
+
+### 4. Create Customer User
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "customer@example.com",
+  "password": "password123",
+  "firstName": "Customer",
+  "lastName": "Test",
+  "phone": "+1555666777",
+  "role": "CUSTOMER",
+  "licenseNumber": "DL123456789",
+  "address": "789 Pine Street",
+  "city": "Chicago",
+  "country": "USA",
+  "zipCode": "60601"
+}
+
+###
+
+### 5. Update User Avatar (Replace user-id-here with actual user ID)
+PUT {{baseUrl}}/admin/users/user-id-here/avatar
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="new-avatar.jpeg"
+Content-Type: image/jpeg
+
+< ./public/assets/new-avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+
+### 6. Delete User Avatar (Replace user-id-here with actual user ID)
+DELETE {{baseUrl}}/admin/users/user-id-here/avatar
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 3. Get Users List
-GET {{baseUrl}}/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc
+### 7. Get Users List with Search
+GET {{baseUrl}}/admin/users?page=1&limit=10&search=john&sortBy=createdAt&sortOrder=desc
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 4. Get Users with Filters
-GET {{baseUrl}}/admin/users?role=USER&isActive=true&search=john&page=1&limit=5
+### 8. Get Users by Role
+GET {{baseUrl}}/admin/users?role=CUSTOMER&page=1&limit=5
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 5. Update User Role
+### 9. Get Active Users Only
+GET {{baseUrl}}/admin/users?isActive=true&page=1&limit=10
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 10. Update User Role (Replace user-id-here with actual user ID)
 PUT {{baseUrl}}/admin/users/user-id-here/role
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "role": "FLEET_MANAGER"
+  "role": "AGENT"
 }
 
 ###
 
-### 6. Update User Status
+### 11. Update User Status (Replace user-id-here with actual user ID)
 PUT {{baseUrl}}/admin/users/user-id-here/status
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -54,7 +170,7 @@ Content-Type: application/json
 
 ###
 
-### 7. Bulk User Action
+### 12. Bulk User Action - Activate Multiple Users
 POST {{baseUrl}}/admin/users/bulk-action
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -67,137 +183,165 @@ Content-Type: application/json
 
 ###
 
-### 8. Get Bookings List
+### 13. Create Multiple Test Users with Different Roles
+
+# Agent User
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "agent1@example.com",
+  "password": "password123",
+  "firstName": "Agent",
+  "lastName": "One",
+  "phone": "+1111111111",
+  "role": "AGENT",
+  "address": "100 Agent Street",
+  "city": "Miami",
+  "country": "USA",
+  "zipCode": "33101"
+}
+
+###
+
+# Customer User with License
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "driver@example.com",
+  "password": "password123",
+  "firstName": "Driver",
+  "lastName": "License",
+  "phone": "+2222222222",
+  "role": "CUSTOMER",
+  "licenseNumber": "DL987654321",
+  "dateOfBirth": "1990-05-15",
+  "address": "200 Driver Lane",
+  "city": "Phoenix",
+  "country": "USA",
+  "zipCode": "85001"
+}
+
+###
+
+### 14. Test Image Upload with Different Image Types
+
+# PNG Image Upload
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+png.user@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+PNG
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+User
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="role"
+
+CUSTOMER
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="avatar.jpeg"
+Content-Type: image/png
+
+< ./public/assets/avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+
+### 15. Get Analytics with Different Periods
+GET {{baseUrl}}/admin/analytics?period=week
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+GET {{baseUrl}}/admin/analytics?period=day
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 16. Get Bookings List (should work after users are created)
 GET {{baseUrl}}/admin/bookings?page=1&limit=10&status=PENDING
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 9. Get Bookings with Filters
-GET {{baseUrl}}/admin/bookings?dateFrom=2024-01-01&dateTo=2024-12-31&minAmount=100&maxAmount=1000
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-###
-
-### 10. Handle Booking Action - Approve
-PUT {{baseUrl}}/admin/bookings/booking-id-here/action
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "action": "approve",
-  "notes": "Booking approved after verification"
-}
-
-###
-
-### 11. Handle Booking Action - Reject
-PUT {{baseUrl}}/admin/bookings/booking-id-here/action
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "action": "reject",
-  "reason": "Insufficient documentation",
-  "notes": "Please provide valid driver's license"
-}
-
-###
-
-### 12. Get Disputes
-GET {{baseUrl}}/admin/disputes
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-###
-
-### 13. Update Dispute
-PUT {{baseUrl}}/admin/disputes/dispute-id-here
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "status": "investigating",
-  "priority": "high",
-  "adminNotes": "Escalated to senior management"
-}
-
-###
-
-### 14. Get System Settings
-GET {{baseUrl}}/admin/settings
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-###
-
-### 15. Update System Setting
-PUT {{baseUrl}}/admin/settings
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "key": "maintenance_mode",
-  "value": "false"
-}
-
-###
-
-### 16. Generate Revenue Report
-GET {{baseUrl}}/admin/reports/generate?type=revenue&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=month&format=json
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-###
-
-### 17. Generate Bookings Report
-GET {{baseUrl}}/admin/reports/generate?type=bookings&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=week
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-###
-
-### 18. Generate Users Report
+### 17. Generate Users Report
 GET {{baseUrl}}/admin/reports/generate?type=users&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=month
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 19. Generate Performance Report
-GET {{baseUrl}}/admin/reports/generate?type=performance&dateFrom=2024-01-01&dateTo=2024-12-31
+### 18. Get System Settings
+GET {{baseUrl}}/admin/settings
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 ###
 
-### 20. Error Test - Invalid User ID
-PUT {{baseUrl}}/admin/users/invalid-user-id/role
+### 19. Error Test - Invalid Image Format (should fail)
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="email"
+
+test.invalid@example.com
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="password"
+
+password123
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="firstName"
+
+Test
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="lastName"
+
+Invalid
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="role"
+
+CUSTOMER
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="document.pdf"
+Content-Type: application/pdf
+
+< ./public/assets/document.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+
+### 20. Error Test - Duplicate Email (should fail)
+POST {{baseUrl}}/admin/users
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "role": "ADMIN"
-}
-
-###
-
-### 21. Error Test - Unauthorized Access (No Token)
-GET {{baseUrl}}/admin/analytics
-Content-Type: application/json
-
-###
-
-### 22. Error Test - Invalid Bulk Action
-POST {{baseUrl}}/admin/users/bulk-action
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "userIds": [],
-  "action": "invalid_action"
+  "email": "john.doe@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Duplicate",
+  "role": "CUSTOMER"
 }
 
 ###

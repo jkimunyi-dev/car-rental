@@ -14,6 +14,8 @@ import { BookingsModule } from './bookings/bookings.module';
 import { AdminModule } from './admin/admin.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { AgentController } from './agent/agent.controller';
+import { AgentModule } from './agent/agent.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -32,8 +34,9 @@ import configuration from './config/configuration';
     BookingsModule,
     AdminModule,
     WishlistModule,
+    AgentModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AgentController],
   providers: [
     AppService,
     {

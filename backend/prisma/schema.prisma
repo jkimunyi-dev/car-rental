@@ -71,7 +71,9 @@ model User {
   role          Role     @default(CUSTOMER)
   isActive      Boolean  @default(true)
   isVerified    Boolean  @default(false)
-  avatar        String?
+  // Updated avatar field for Cloudinary
+  avatar        String?  // Cloudinary secure_url
+  avatarPublicId String? // Cloudinary public_id for deletion
   address       String?
   city          String?
   country       String?
@@ -84,8 +86,8 @@ model User {
   reviews                Review[]
   paymentMethods         PaymentMethod[]
   refreshTokens          RefreshToken[]
-  wishlists              Wishlist[]                // Add this
-  wishlistNotifications  WishlistNotification[]    // Add this
+  wishlists              Wishlist[]
+  wishlistNotifications  WishlistNotification[]
 
   @@map("users")
 }
@@ -122,7 +124,10 @@ model Vehicle {
   description   String?
   location      String
   features      String[] // JSON array of features
-  images        String[] // Array of image URLs
+  // Updated images field for Cloudinary
+  images        Json[] // Array of {url: string, publicId: string, alt?: string}
+  primaryImage  String? // Primary image URL for quick access
+  primaryImagePublicId String? // Primary image public_id
   isActive      Boolean         @default(true)
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
@@ -130,8 +135,8 @@ model Vehicle {
   // Relations
   bookings               Booking[]
   reviews                Review[]
-  wishlists              Wishlist[]                // Add this
-  wishlistNotifications  WishlistNotification[]    // Add this
+  wishlists              Wishlist[]
+  wishlistNotifications  WishlistNotification[]
 
   @@map("vehicles")
 }
@@ -158,6 +163,9 @@ model Booking {
   status        BookingStatus @default(PENDING)
   notes         String?
   cancellationReason String?
+  // Added vehicle image snapshot for booking
+  vehicleImageUrl String? // Snapshot of vehicle image at booking time
+  vehicleImagePublicId String? // Public ID for the snapshot image
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsString, IsBoolean, IsInt, Min, Max, IsArray } from 'class-validator';
+import { IsOptional, IsEnum, IsString, IsBoolean, IsInt, Min, Max, IsArray, IsEmail, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Role, BookingStatus } from '@prisma/client';
 
@@ -189,4 +189,55 @@ export class GenerateReportDto {
   @IsOptional()
   @IsEnum(['day', 'week', 'month', 'year'])
   groupBy?: 'day' | 'week' | 'month' | 'year';
+}
+
+export class CreateUserDto {
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsString()
+  firstName: string;
+
+  @IsString()
+  lastName: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  dateOfBirth?: string;
+
+  @IsOptional()
+  @IsString()
+  licenseNumber?: string;
+
+  @IsEnum(Role)
+  role: Role;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
+  zipCode?: string;
+}
+
+export class UpdateUserAvatarDto {
+  @IsString()
+  userId: string;
 }

@@ -3,7 +3,7 @@
 @accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQwNzU4LCJleHAiOjE3NTExNDQzNTh9.r4rgRoRdmW4Ldz75pkbSM3FJ_UDoO0ARFhoksTfx57Q
 @refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQwNzU4LCJleHAiOjE3NTE3NDU1NTh9.3965EjoBymK5TicTxGp5BDOuGMnL0H2m3tSjr4BKcVM
 @resetToken = 
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTkwMDIzLCJleHAiOjE3NTExOTM2MjN9.ItY8XnKfVXsnGl-vUI67xh9Ma3TTAbYNI9LA3mMtnL0
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzU0ODgzLCJleHAiOjE3NTEzNTg0ODN9.Bdu-7P0GMm5sZ-PASX0coN7TIQi5y2J6aXqcdticTAA
 @agentToken = 
 
 ### ========== USER REGISTRATION TESTS ==========
@@ -931,7 +931,7 @@ PATCH {{baseUrl}}/users/AGENT_USER_ID/deactivate
 Authorization: Bearer {{adminToken}}
 
 ### Admin can delete agent (careful with this)
-DELETE {{baseUrl}}/users/AGENT_USER_ID
+DELETE {{baseUrl}}/users/cmck7x8td0005it6slq7744it
 Authorization: Bearer {{adminToken}}
 
 ### ========== AGENT SELF-MANAGEMENT TESTS ==========

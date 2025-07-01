@@ -41,7 +41,7 @@
                 
                 <p style="margin-bottom: 25px; color: #666;">Click below to rate your experience and leave a review:</p>
                 
-                <a href="<%= reviewUrl %>" class="review-button">Write a Review</a>
+                <a href="http://localhost:4200/reviews/create?bookingId=<%= booking.id %>" class="review-button">Write a Review</a>
             </div>
             
             <div class="booking-recap">
@@ -77,13 +77,13 @@
             
             <div style="text-align: center; margin: 30px 0;">
                 <p style="color: #666; margin-bottom: 20px;">Your review will help us serve you better</p>
-                <a href="<%= reviewUrl %>" style="background: #8b5cf6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">Leave Your Review</a>
+                <a href="http://localhost:4200/reviews/create?bookingId=<%= booking.id %>" style="background: #8b5cf6; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">Leave Your Review</a>
             </div>
             
             <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 20px; margin: 25px 0; text-align: center;">
                 <h4 style="color: #0c4a6e; margin-bottom: 10px;">🚗 Book Your Next Adventure</h4>
                 <p style="color: #0c4a6e; margin-bottom: 15px;">Ready for your next trip? Browse our fleet of vehicles.</p>
-                <a href="<%= frontendUrl %>/vehicles" style="background: #0ea5e9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600;">Browse Vehicles</a>
+                <a href="http://localhost:4200/vehicles" style="background: #0ea5e9; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: 600;">Browse Vehicles</a>
             </div>
         </div>
         

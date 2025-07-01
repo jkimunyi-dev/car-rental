@@ -5,9 +5,10 @@ import { UsersModule } from '../users/users.module';
 import { VehiclesModule } from '../vehicles/vehicles.module';
 import { BookingsModule } from '../bookings/bookings.module';
 import { EmailModule } from '../email/email.module';
+import { UploadModule } from '../upload/upload.module';
 
 @Module({
-  imports: [UsersModule, VehiclesModule, BookingsModule, EmailModule],
+  imports: [UsersModule, VehiclesModule, BookingsModule, EmailModule, UploadModule],
   controllers: [AdminController],
   providers: [AdminService],
   exports: [AdminService],

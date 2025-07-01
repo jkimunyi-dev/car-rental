@@ -14,8 +14,8 @@
 @secondUserPassword = Kelly911254!
 
 # Test tokens (will be set after login)
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQ3OTEzLCJleHAiOjE3NTExNTE1MTN9.u52O9G0DSYmJAZArZ_3l0k6dFG07rQpJ8vTp0ODHquI
-@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnZ1aGEwMDAwOXo0aTRvcmczNHIxIiwiaWF0IjoxNzUxMTQ3OTQwLCJleHAiOjE3NTExNTE1NDB9.pGhka84P4pE5FOa_YUO5X64dN9LesTIr4g1WTvyUZNs
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzU2MjUzLCJleHAiOjE3NTEzNTk4NTN9.Dhrz6r_xa5enHjsALixVtqAQtrNjMxuSp2d-SjQHhOg
+@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNrODBoZjEwMDAzaXQzdWdwYWRyajY0IiwiaWF0IjoxNzUxMzU2Mjg1LCJleHAiOjE3NTEzNTk4ODV9.-YyFeevStFiSR0-9n5av-vRR5omqziEJh02UyR7K-Mk
 @secondUserToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTQ4Njc1LCJleHAiOjE3NTExNTIyNzV9.wF77-d2RE5vPmnTl-VEXkOY55n-NFjVLZUls8_6RCN4
 @userId = cmcgnvuha00009z4i4org34r1
 @secondUserId = cmcgsnnyx00059z9isr5q6a95
@@ -101,16 +101,151 @@ Authorization: Bearer {{secondUserToken}}
   "zipCode": "80100"
 }
 
-### Upload Avatar (Jimmy) - Multipart form
+###
+# 3. AVATAR/IMAGE UPLOAD TESTS
+###
+
+### Upload Avatar for Jimmy (Sample Image Data)
 POST {{baseUrl}}/users/profile/avatar
-Content-Type: multipart/form-data
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 Authorization: Bearer {{userToken}}
 
-# Note: In a real test, you would upload an actual image file
-# avatar=@/path/to/image.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-avatar.jpg"
+Content-Type: image/jpeg
+
+< ./test-images/jimmy-avatar.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar for Kelly (Sample Image Data)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{secondUserToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="kelly-avatar.jpeg"
+Content-Type: image/png
+
+< ./test-images/kelly-avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Base64 Data (Jimmy) - Alternative Method
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-new-avatar.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get Profile After Avatar Upload (Jimmy)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Get Profile After Avatar Upload (Kelly)
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{secondUserToken}}
+
+### Upload Avatar with Wrong Content Type (Should Fail) - Jimmy
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="document.pdf"
+Content-Type: application/pdf
+
+JVBERi0xLjQKJcOkw7zDtsO8CjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0ZURlY29kZT4+CnN0cmVhbQp4nCvkMlAwULCx0XfOzCvJzE21UCjKzCvJzE21UihKTUxPzStRyC9NzStRyMyrVLBVqFDI0Q8LdvZKzStJzStRyCnhqgAAD6cPUmVuZHN0cmVhbQplbmRvYmoKZW5kb2JqCjMgMCBvYmoKNjIKZW5kb2JqCjEgMCBvYmoKPDwvVHlwZS9QYWdlL1BhcmVudCA0IDAgUi9SZXNvdXJjZXMgMiAwIFIvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXS9Hcm91cCA8PC9TL1RyYW5zcGFyZW5jeS9DUy4vRGV2aWNlUkdCL0kgdHJ1ZT4+L0NvbnRlbnRzIDMgMCBSPj4KZW5kb2JqCjQgMCBvYmoKPDwvVHlwZS9QYWdlcyBPQ1JfRmx2IDAgL0NvdW50IDEvS2lkcyBbMSAwIFJdL0luZGVudCBuZXcgZmlsZT4+CmVuZG9iago=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with No File (Should Fail) - Jimmy
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="notavatar"; filename=""
+Content-Type: 
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Large File (Should Fail - Over 5MB) - Jimmy
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="large-image.jpg"
+Content-Type: image/jpeg
+
+# This would be a large base64 encoded image over 5MB
+# For testing purposes, this would fail with "File size too large" error
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Different Image Formats - WebP (Jimmy)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-avatar.webp"
+Content-Type: image/webp
+
+UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoBAAEALmk0mk0iIiIiIgBoSygABc6zbAAA/v56B4PiOf7+af7+YQA=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar Without Authorization (Should Fail)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="unauthorized.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Delete Avatar (Jimmy)
+DELETE {{baseUrl}}/users/profile/avatar
+Authorization: Bearer {{userToken}}
+
+### Delete Avatar (Kelly)
+DELETE {{baseUrl}}/users/profile/avatar
+Authorization: Bearer {{secondUserToken}}
+
+### Try to Delete Avatar When None Exists (Should Fail) - Jimmy
+DELETE {{baseUrl}}/users/profile/avatar
+Authorization: Bearer {{userToken}}
+
+### Upload Another Avatar After Deletion (Jimmy)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-new-avatar.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Replace Existing Avatar (Kelly)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{secondUserToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="kelly-replacement.png"
+Content-Type: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ###
-# 3. PASSWORD MANAGEMENT TESTS
+# 4. PASSWORD MANAGEMENT TESTS
 ###
 
 ### Change Password (Jimmy)
@@ -163,7 +298,7 @@ Authorization: Bearer {{secondUserToken}}
 }
 
 ###
-# 4. USER ACTIVITY TESTS
+# 5. USER ACTIVITY TESTS
 ###
 
 ### Get User Activity Log (Jimmy)
@@ -179,7 +314,7 @@ GET {{baseUrl}}/users/activity?page=1&limit=10
 Authorization: Bearer {{secondUserToken}}
 
 ###
-# 5. ADMIN USER MANAGEMENT TESTS
+# 6. ADMIN USER MANAGEMENT TESTS
 ###
 
 ### Get All Users (Admin only)
@@ -283,7 +418,7 @@ Authorization: Bearer {{adminToken}}
 }
 
 ###
-# 6. USER STATUS MANAGEMENT TESTS
+# 7. USER STATUS MANAGEMENT TESTS
 ###
 
 ### Deactivate User (Jimmy)
@@ -330,7 +465,136 @@ PATCH {{baseUrl}}/users/{{secondUserId}}/activate
 Authorization: Bearer {{adminToken}}
 
 ###
-# 7. ERROR HANDLING TESTS
+# 8. IMAGE UPLOAD EDGE CASES AND VALIDATION TESTS
+###
+
+### Upload Avatar with Invalid Authorization Token (Should Fail)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer invalid-token-here
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="test.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Unsupported Image Format - GIF (Should Fail)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="test.gif"
+Content-Type: image/gif
+
+R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Malformed Image Data (Should Fail)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="malformed.jpg"
+Content-Type: image/jpeg
+
+This is not a valid image file content
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Empty File (Should Fail)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="empty.jpg"
+Content-Type: image/jpeg
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Avatar with Special Characters in Filename
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="special-chars-@#$%^&*().jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload Multiple Files (Should Only Process First)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="first.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="second.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+# 9. IMAGE UPLOAD SUCCESS FLOW TESTS
+###
+
+### Successful Upload - Test All Supported Formats
+
+### Upload JPEG Avatar (Jimmy)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-success.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload PNG Avatar (Kelly)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{secondUserToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="kelly-success.png"
+Content-Type: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Upload WebP Avatar (Jimmy)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="jimmy-webp.webp"
+Content-Type: image/webp
+
+UklGRk4AAABXRUJQVlA4IEIAAACyAgCdASoBAAEALmk0mk0iIiIiIgBoSygABc6zbAAA/v56B4PiOf7+af7+YQA=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Verify Profile Updates After Successful Uploads
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{secondUserToken}}
+
+###
+# 10. ERROR HANDLING TESTS
 ###
 
 ### Try to Access Admin Endpoint as Regular User (Should Fail) - Jimmy
@@ -412,7 +676,69 @@ Authorization: Bearer {{adminToken}}
 }
 
 ###
-# 8. PAGINATION TESTS
+# 11. COMPREHENSIVE IMAGE TESTING WORKFLOW
+###
+
+### Complete Image Upload and Management Workflow
+
+### Step 1: Upload Initial Avatar (Jimmy)
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="workflow-initial.jpg"
+Content-Type: image/jpeg
+
+/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Step 2: Verify Upload Success
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Step 3: Replace Avatar
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="workflow-replacement.png"
+Content-Type: image/png
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAEUlEQVR42mP8/5+hHgAIhAJ/wlvuFgAAAABJRU5ErkJggg==
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Step 4: Verify Replacement
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Step 5: Delete Avatar
+DELETE {{baseUrl}}/users/profile/avatar
+Authorization: Bearer {{userToken}}
+
+### Step 6: Verify Deletion
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+### Step 7: Upload Final Avatar
+POST {{baseUrl}}/users/profile/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+Authorization: Bearer {{userToken}}
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="avatar"; filename="workflow-final.webp"
+Content-Type: image/webp
+
+UklGRk4AAABXRUJQVlA4IEIAAACyAgCdASoBAAEALmk0mk0iIiIiIgBoSygABc6zbAAA/v56B4PiOf7+af7+YQA=
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Step 8: Final Verification
+GET {{baseUrl}}/users/profile
+Authorization: Bearer {{userToken}}
+
+###
+# 12. PAGINATION TESTS
 ###
 
 ### Test Large Page Size
@@ -428,7 +754,7 @@ GET {{baseUrl}}/users?page=0&limit=-5
 Authorization: Bearer {{adminToken}}
 
 ###
-# 9. SEARCH AND FILTER COMBINATION TESTS
+# 13. SEARCH AND FILTER COMBINATION TESTS
 ###
 
 ### Search Active Customers
@@ -456,412 +782,48 @@ GET {{baseUrl}}/users?search=James
 Authorization: Bearer {{adminToken}}
 
 ###
-# 10. PERFORMANCE TESTS
+# 14. CLEANUP AND FINAL VERIFICATION
 ###
 
-### Rapid Profile Updates (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jimmy Rapid 1"
-}
-
-### 
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jimmy Rapid 2"
-}
-
-### 
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jimmy Rapid 3"
-}
-
-### Rapid Profile Updates (Kelly)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "firstName": "Kelly Rapid 1"
-}
-
-### 
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "firstName": "Kelly Rapid 2"
-}
-
-###
-# 11. AUTHORIZATION TESTS
-###
-
-### Test Access Without Token (Should Fail)
-GET {{baseUrl}}/users/profile
-
-### Test Access with Invalid Token (Should Fail)
-GET {{baseUrl}}/users/profile
-Authorization: Bearer invalid-token
-
-### Test Cross-User Access (Jimmy trying to access Kelly's data)
-# Note: This would require endpoint that accepts user ID, which doesn't exist in profile endpoints
-
-###
-# 12. DATA VALIDATION TESTS
-###
-
-### Create User with Invalid Email (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "invalid-email",
-  "password": "TestUser123!",
-  "firstName": "Test",
-  "lastName": "User",
-  "role": "CUSTOMER"
-}
-
-### Create User with Short Password (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "shortpass@example.com",
-  "password": "123",
-  "firstName": "Test",
-  "lastName": "User",
-  "role": "CUSTOMER"
-}
-
-### Create User with Invalid Phone (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "invalidphone@example.com",
-  "password": "TestUser123!",
-  "firstName": "Test",
-  "lastName": "User",
-  "phone": "invalid-phone",
-  "role": "CUSTOMER"
-}
-
-### Create User with Invalid Role (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "invalidrole@example.com",
-  "password": "TestUser123!",
-  "firstName": "Test",
-  "lastName": "User",
-  "role": "INVALID_ROLE"
-}
-
-### Create User with Short First Name (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "shortname@example.com",
-  "password": "TestUser123!",
-  "firstName": "A",
-  "lastName": "User",
-  "role": "CUSTOMER"
-}
-
-### Create User with Short Last Name (Should Fail)
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "shortlast@example.com",
-  "password": "TestUser123!",
-  "firstName": "Test",
-  "lastName": "B",
-  "role": "CUSTOMER"
-}
-
-### Update Profile with Invalid Date (Should Fail) - Jimmy
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "dateOfBirth": "invalid-date"
-}
-
-### Update Profile with Invalid Phone (Should Fail) - Jimmy
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "phone": "invalid-phone-format"
-}
-
-###
-# 13. EDGE CASE TESTS
-###
-
-### Update Profile with Same Data (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jimmy",
-  "lastName": "Kimunyi"
-}
-
-### Update Profile with Same Data (Kelly)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "firstName": "Kelly",
-  "lastName": "James"
-}
-
-### Create User with Minimum Required Data
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "minimal@example.com",
-  "password": "MinimalUser123!",
-  "firstName": "Min",
-  "lastName": "User",
-  "role": "CUSTOMER"
-}
-
-### Create User with Maximum Data
-POST {{baseUrl}}/users
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "email": "maximal@example.com",
-  "password": "MaximalUser123!",
-  "firstName": "Maximal Test User",
-  "lastName": "With Long Last Name",
-  "phone": "+254734567890",
-  "dateOfBirth": "1990-12-31",
-  "role": "CUSTOMER",
-  "isActive": true,
-  "isVerified": true,
-  "licenseNumber": "MAX123456789",
-  "address": "123 Maximal Street, Suite 456, Building A",
-  "city": "Maximal City",
-  "country": "Kenya",
-  "zipCode": "99999"
-}
-
-### Update Profile with Unicode Characters (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jïmmy",
-  "lastName": "Kïmünyï",
-  "address": "123 Ñairobi Street"
-}
-
-###
-# 14. CONCURRENT ACCESS TESTS
-###
-
-### Multiple Profile Updates (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "firstName": "Jimmy Concurrent 1"
-}
-
-### Simultaneous Update (Kelly)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "firstName": "Kelly Concurrent 1"
-}
-
-### Another Update (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "lastName": "Kimunyi Concurrent 2"
-}
-
-### Another Update (Kelly)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "lastName": "James Concurrent 2"
-}
-
-### Verify Final State (Jimmy)
+### Final Profile Check (Jimmy)
 GET {{baseUrl}}/users/profile
 Authorization: Bearer {{userToken}}
 
-### Verify Final State (Kelly)
+### Final Profile Check (Kelly)
 GET {{baseUrl}}/users/profile
 Authorization: Bearer {{secondUserToken}}
 
-###
-# 15. ACTIVITY LOGGING VERIFICATION
-###
+### Final Admin Check - All Users
+GET {{baseUrl}}/users
+Authorization: Bearer {{adminToken}}
 
-### Trigger Multiple Activities (Jimmy)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "city": "Nairobi Updated"
-}
-
-### Change Password (Jimmy)
-PATCH {{baseUrl}}/users/change-password
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "currentPassword": "{{testUserPassword}}",
-  "newPassword": "TempPassword123!"
-}
-
-### Change Password Back (Jimmy)
-PATCH {{baseUrl}}/users/change-password
-Content-Type: application/json
-Authorization: Bearer {{userToken}}
-
-{
-  "currentPassword": "TempPassword123!",
-  "newPassword": "{{testUserPassword}}"
-}
-
-### Check Activity Log (Jimmy)
+### Final Activity Log Check (Jimmy)
 GET {{baseUrl}}/users/activity?page=1&limit=20
 Authorization: Bearer {{userToken}}
 
-### Trigger Activities (Kelly)
-PATCH {{baseUrl}}/users/profile
-Content-Type: application/json
-Authorization: Bearer {{secondUserToken}}
-
-{
-  "city": "Mombasa Updated"
-}
-
-### Check Activity Log (Kelly)
+### Final Activity Log Check (Kelly)
 GET {{baseUrl}}/users/activity?page=1&limit=20
 Authorization: Bearer {{secondUserToken}}
-
-###
-# 16. ADMIN OPERATIONS ON EXISTING USERS
-###
-
-### Admin Update Jimmy's Status
-PATCH {{baseUrl}}/users/{{userId}}
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "isActive": true,
-  "isVerified": true
-}
-
-### Admin Update Kelly's Status
-PATCH {{baseUrl}}/users/{{secondUserId}}
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "isActive": true,
-  "isVerified": true
-}
-
-### Admin Update Jimmy's Role (if needed)
-PATCH {{baseUrl}}/users/{{userId}}
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "role": "CUSTOMER"
-}
-
-### Admin Update Kelly's Role (if needed)
-PATCH {{baseUrl}}/users/{{secondUserId}}
-Content-Type: application/json
-Authorization: Bearer {{adminToken}}
-
-{
-  "role": "CUSTOMER"
-}
-
-###
-# 17. CLEANUP TESTS (Use with caution)
-###
-
-### Delete Additional Test Users (Admin only)
-# Note: Be careful with these - they will permanently delete users
-# DELETE {{baseUrl}}/users/{{userId}}
-# Authorization: Bearer {{adminToken}}
-
-### Try to Access Deleted User (Should Fail)
-# GET {{baseUrl}}/users/{{userId}}
-# Authorization: Bearer {{adminToken}}
-
-### Try to Login with Deleted User (Should Fail)
-# POST {{baseUrl}}/auth/login
-# Content-Type: application/json
-# {
-#   "email": "{{testUserEmail}}",
-#   "password": "{{testUserPassword}}"
-# }
 
 ###
 # END OF TESTS
 ###
 
-# Notes:
-# 1. Replace {{adminToken}}, {{userToken}}, {{secondUserToken}}, {{userId}}, and {{secondUserId}} with actual values after login
-# 2. The users used in this test are:
-#    - Admin: jkkimunyi@gmail.com (@_Kimunyi123!)
-#    - User 1: kimunyijimmy@gmail.com (Kimunyi123!)
-#    - User 2: jkelly911254@gmail.com (Kelly911254!)
-# 3. Some tests require file uploads - adjust multipart requests accordingly
-# 4. Run tests in sequence for proper setup and teardown
-# 5. Monitor server logs for detailed error information
-# 6. Cleanup tests are commented out to prevent accidental deletion
-# 7. Make sure to run auth-test.http first to create the required users
+# Notes for Image Upload Testing:
+# 1. The base64 encoded images used are minimal valid images for testing
+# 2. Replace file paths in < ./test-images/... with actual image files if available
+# 3. For production testing, use actual image files from your filesystem
+# 4. The multipart/form-data format is correctly structured for file uploads
+# 5. Test both successful uploads and various failure scenarios
+# 6. Monitor server logs for Cloudinary upload confirmations
+# 7. Verify that old images are properly deleted when replaced
+# 8. Check that avatar URLs are correctly returned and stored
+# 9. Test file size limits and supported formats
+# 10. Validate proper error messages for invalid uploads
+
+# File Upload Test Instructions:
+# 1. Create a 'test-images' folder in your project root
+# 2. Add sample images: jimmy-avatar.jpg, kelly-avatar.jpeg
+# 3. Adjust file paths in the upload requests as needed
+# 4. For automated testing, use the base64 encoded images provided
+# 5. For manual testing, use actual image files from your system
