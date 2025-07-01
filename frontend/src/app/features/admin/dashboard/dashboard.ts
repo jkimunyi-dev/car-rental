@@ -1,51 +1,59 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Admin } from '../admin';
-import { AdminAnalytics } from '../../../core/models/admin.models';
+import { RouterModule, Router } from '@angular/router';
+import { AuthService } from '../../../core/services/auth.service';
+import { ClickOutsideDirective } from '../../../shared/directives/click-outside.directive';
 
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule, ClickOutsideDirective],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss']
 })
 export class AdminDashboard implements OnInit {
-  analytics: AdminAnalytics | null = null;
-  isLoading = true;
-  selectedPeriod: 'day' | 'week' | 'month' | 'year' = 'month';
-  periods: ('day' | 'week' | 'month' | 'year')[] = ['day', 'week', 'month', 'year'];
+  sidebarMinimized = false;
+  showProfileDropdown = false;
+  currentUser: any = null;
 
-  constructor(private adminService: Admin) {}
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
-    this.loadAnalytics();
+    this.loadCurrentUser();
   }
 
-  loadAnalytics() {
-    this.isLoading = true;
-    this.adminService.getAnalytics(this.selectedPeriod).subscribe({
-      next: (data) => {
-        this.analytics = data;
-        this.isLoading = false;
+  loadCurrentUser() {
+    this.authService.getCurrentUser().subscribe({
+      next: (user) => {
+        this.currentUser = user;
       },
       error: (error) => {
-        console.error('Error loading analytics:', error);
-        this.isLoading = false;
+        console.error('Error loading current user:', error);
       }
     });
   }
 
-  onPeriodChange(period: 'day' | 'week' | 'month' | 'year') {
-    this.selectedPeriod = period;
-    this.loadAnalytics();
+  toggleSidebar() {
+    this.sidebarMinimized = !this.sidebarMinimized;
   }
 
-  getGrowthColor(growth: number): string {
-    return growth > 0 ? 'text-green-600' : growth < 0 ? 'text-red-600' : 'text-gray-600';
+  toggleProfileDropdown() {
+    this.showProfileDropdown = !this.showProfileDropdown;
   }
 
-  getGrowthIcon(growth: number): string {
-    return growth > 0 ? '↗' : growth < 0 ? '↙' : '→';
+  closeProfileDropdown() {
+    this.showProfileDropdown = false;
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+
+  navigateToProfile() {
+    this.router.navigate(['/profile']);
+    this.showProfileDropdown = false;
   }
 }

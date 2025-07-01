@@ -1,0 +1,250 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">My Wishlist</h1>
+          <p class="text-gray-600 mt-1" *ngIf="wishlistData()?.stats">
+            {{ wishlistData()!.stats.totalItems }} vehicles saved
+          </p>
+        </div>
+        
+        <button 
+          *ngIf="(wishlistData()?.items?.length ?? 0) > 0"
+          (click)="clearWishlist()"
+          class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+          Clear All
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div class="bg-red-50 border border-red-200 rounded-md p-4">
+      <div class="flex">
+        <i class="ri-error-warning-line text-red-400 mt-1"></i>
+        <div class="ml-3">
+          <p class="text-sm text-red-800">{{ error() }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="flex justify-center items-center py-20">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!isLoading()" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Filters -->
+    <div *ngIf="(wishlistData()?.items?.length ?? 0) > 0" class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Category Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select 
+            [(ngModel)]="filters.category"
+            (ngModelChange)="onFilterChange()"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option *ngFor="let category of categories" [value]="category.value">{{ category.label }}</option>
+          </select>
+        </div>
+
+        <!-- Location Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <input 
+            type="text" 
+            [(ngModel)]="filters.location"
+            (ngModelChange)="onFilterChange()"
+            placeholder="Enter location..."
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+
+        <!-- Availability Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Availability</label>
+          <select 
+            [(ngModel)]="filters.availableOnly"
+            (ngModelChange)="onFilterChange()"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option [ngValue]="null">All</option>
+            <option [ngValue]="true">Available Only</option>
+            <option [ngValue]="false">Unavailable Only</option>
+          </select>
+        </div>
+
+        <!-- Sort -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+          <div class="flex space-x-2">
+            <select 
+              [(ngModel)]="filters.sortBy"
+              (ngModelChange)="onSortChange()"
+              class="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option *ngFor="let option of sortOptions" [value]="option.value">{{ option.label }}</option>
+            </select>
+            <button
+              (click)="filters.sortOrder = filters.sortOrder === 'asc' ? 'desc' : 'asc'; onSortChange()"
+              class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+              <i class="ri-sort-{{ filters.sortOrder === 'asc' ? 'asc' : 'desc' }}-line"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div *ngIf="wishlistData()?.stats" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-blue-100 rounded-lg">
+            <i class="ri-heart-line text-blue-600"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Total Items</p>
+            <p class="text-2xl font-bold text-gray-900">{{ wishlistData()!.stats.totalItems }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-green-100 rounded-lg">
+            <i class="ri-check-line text-green-600"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Available</p>
+            <p class="text-2xl font-bold text-gray-900">{{ wishlistData()!.stats.availableItems }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-red-100 rounded-lg">
+            <i class="ri-close-line text-red-600"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Unavailable</p>
+            <p class="text-2xl font-bold text-gray-900">{{ wishlistData()!.stats.unavailableItems }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+          <div class="p-2 bg-yellow-100 rounded-lg">
+            <i class="ri-arrow-down-line text-yellow-600"></i>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600">Price Drops</p>
+            <p class="text-2xl font-bold text-gray-900">{{ wishlistData()!.stats.priceDrops }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="(wishlistData()?.items?.length ?? 0) === 0" class="text-center py-12">
+      <i class="ri-heart-line text-6xl text-gray-300 mb-4"></i>
+      <h3 class="text-xl font-medium text-gray-900 mb-2">Your wishlist is empty</h3>
+      <p class="text-gray-600 mb-6">Start adding vehicles you love to keep track of them</p>
+      <a routerLink="/vehicles" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+        Browse Vehicles
+      </a>
+    </div>
+
+    <!-- Wishlist Items Grid -->
+    <div *ngIf="(wishlistData()?.items?.length ?? 0) > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+      <div *ngFor="let item of wishlistData()!.items" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+        <!-- Vehicle Image -->
+        <div class="relative">
+          <img 
+            [src]="getImageUrl(item.vehicle.images)"
+            [alt]="item.vehicle.make + ' ' + item.vehicle.model"
+            class="w-full h-48 object-cover">
+          
+          <!-- Price Change Badge -->
+          <div *ngIf="item.vehicle.priceChanged" class="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs">
+            Price Drop!
+          </div>
+          
+          <!-- Remove Button -->
+          <button 
+            (click)="removeFromWishlist(item.vehicleId)"
+            class="absolute top-2 right-2 bg-white rounded-full p-2 hover:bg-red-50 transition-colors">
+            <i class="ri-heart-fill text-red-500"></i>
+          </button>
+        </div>
+
+        <!-- Vehicle Details -->
+        <div class="p-4">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">
+            {{ item.vehicle.make }} {{ item.vehicle.model }} {{ item.vehicle.year }}
+          </h3>
+          
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xl font-bold text-blue-600">
+              {{ formatPrice(item.vehicle.pricePerDay) }}/day
+            </span>
+            <span [class]="getAvailabilityClass(item)" class="text-sm font-medium">
+              {{ getAvailabilityText(item) }}
+            </span>
+          </div>
+
+          <div class="flex items-center mb-3">
+            <div class="flex">
+              <i *ngFor="let star of getRatingStars(item.vehicle.averageRating)" 
+                 class="ri-{{ star }} text-yellow-400"></i>
+            </div>
+            <span class="ml-2 text-sm text-gray-600">{{ item.vehicle.averageRating }}</span>
+          </div>
+
+          <p class="text-sm text-gray-600 mb-4">{{ item.vehicle.location }}</p>
+
+          <div class="flex space-x-2">
+            <button 
+              (click)="viewVehicleDetails(item.vehicleId)"
+              class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm">
+              View Details
+            </button>
+            <button 
+              (click)="quickBook(item.vehicleId)"
+              [disabled]="!item.vehicle.isAvailable"
+              class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+              Quick Book
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="wishlistData()?.pagination && wishlistData()!.pagination.totalPages > 1" 
+         class="flex justify-center">
+      <nav class="flex items-center space-x-2">
+        <button 
+          [disabled]="wishlistData()!.pagination.page <= 1"
+          (click)="onPageChange(wishlistData()!.pagination.page - 1)"
+          class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          Previous
+        </button>
+        
+        <span class="px-4 py-2 text-sm text-gray-700">
+          Page {{ wishlistData()!.pagination.page }} of {{ wishlistData()!.pagination.totalPages }}
+        </span>
+        
+        <button 
+          [disabled]="wishlistData()!.pagination.page >= wishlistData()!.pagination.totalPages"
+          (click)="onPageChange(wishlistData()!.pagination.page + 1)"
+          class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+          Next
+        </button>
+      </nav>
+    </div>
+  </div>
+</div>

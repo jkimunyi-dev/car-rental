@@ -10,11 +10,47 @@ export interface AdminAnalytics {
   usersByRole: Record<string, number>;
   bookingsByStatus: Record<string, number>;
   vehiclesByStatus: Record<string, number>;
-  recentActivity: any[];
-  monthlyRevenue: any[];
-  monthlyBookings: any[];
-  topVehicles: any[];
-  topCustomers: any[];
+  recentActivity: RecentActivity[];
+  monthlyRevenue: MonthlyMetric[];
+  monthlyBookings: MonthlyMetric[];
+  topVehicles: TopVehicle[];
+  topCustomers: TopCustomer[];
+}
+
+export interface RecentActivity {
+  id: string;
+  type: 'booking' | 'user' | 'payment' | 'vehicle';
+  description: string;
+  timestamp: string;
+  userId?: string;
+  bookingId?: string;
+  amount?: number;
+}
+
+export interface MonthlyMetric {
+  month: string;
+  value: number;
+  count?: number;
+}
+
+export interface TopVehicle {
+  id: string;
+  make: string;
+  model: string;
+  year: number;
+  bookingCount: number;
+  totalRevenue: number;
+  averageRating: number;
+}
+
+export interface TopCustomer {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  bookingCount: number;
+  totalSpent: number;
+  joinDate: string;
 }
 
 export interface AdminUser {
@@ -27,17 +63,12 @@ export interface AdminUser {
   isActive: boolean;
   isVerified: boolean;
   avatar?: string;
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminBooking {
   id: string;
-  userId: string;
-  vehicleId: string;
-  startDate: Date;
-  endDate: Date;
-  status: string;
-  totalAmount: number;
   user: {
     firstName: string;
     lastName: string;
@@ -48,6 +79,11 @@ export interface AdminBooking {
     model: string;
     year: number;
   };
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
 }
 
 export interface AdminVehicle {
@@ -56,15 +92,35 @@ export interface AdminVehicle {
   model: string;
   year: number;
   category: string;
-  status: string;
   pricePerDay: number;
+  status: string;
   location: string;
-  licensePlate: string;
-  images: string[];
-  features: string[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  licensePlate?: string;
+  images?: string[];
+  description?: string;
+  features?: string[];
+  transmission?: string;
+  fuelType?: string;
+  seats?: number;
+  mileage?: number;
+  isAvailable?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  doors?: number;
+  color?: string;
+  vin?: string;
+  pricePerHour?: number;
+}
+
+export interface BulkActionResult {
+  successful: string[];
+  failed: Array<{
+    userId: string;
+    error: string;
+  }>;
+  total: number;
+  successCount: number;
+  failureCount: number;
 }
 
 export interface SystemSettings {
@@ -72,16 +128,8 @@ export interface SystemSettings {
   key: string;
   value: string;
   category: string;
-  description?: string;
-}
-
-export interface BulkActionResult {
-  successful: string[];
-  failed: Array<{
-    id: string;
-    error: string;
-  }>;
-  total: number;
-  successCount: number;
-  failureCount: number;
+  type: string;
+  isEditable: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

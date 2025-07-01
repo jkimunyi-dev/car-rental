@@ -7,6 +7,7 @@ import { LoginRequest } from '../../../core/models/auth.models';
 
 @Component({
   selector: 'app-login',
+  standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
   styleUrl: './login.scss'
@@ -35,29 +36,40 @@ export class Login {
   onSubmit(): void {
     if (this.loginForm.valid) {
       this.error.set('');
-      const credentials: LoginRequest = this.loginForm.value;
+      const credentials: LoginRequest = {
+        email: this.loginForm.value.email,
+        password: this.loginForm.value.password,
+        rememberMe: this.loginForm.value.rememberMe
+      };
       
       this.authService.login(credentials).subscribe({
         next: (response) => {
+          console.log('Login successful:', response);
           const userRole = response.data.user.role;
           
+          // Navigate based on role
           switch (userRole) {
             case 'ADMIN':
-              this.router.navigate(['/admin/dashboard']);
+              this.router.navigate(['/admin']);
               break;
             case 'AGENT':
               this.router.navigate(['/agent/dashboard']);
               break;
             default:
-              this.router.navigate(['/dashboard']);
+              this.router.navigate(['/']);
           }
         },
         error: (err) => {
           console.error('Login error:', err);
-          this.error.set(
-            err.error?.message || 
-            'Invalid email or password. Please try again.'
-          );
+          let errorMessage = 'Invalid email or password. Please try again.';
+          
+          if (err.error?.message) {
+            errorMessage = err.error.message;
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          
+          this.error.set(errorMessage);
         }
       });
     } else {
@@ -79,10 +91,18 @@ export class Login {
   getFieldError(fieldName: string): string {
     const field = this.loginForm.get(fieldName);
     if (field?.touched && field?.errors) {
-      if (field.errors['required']) return `${fieldName} is required`;
+      if (field.errors['required']) return `${this.getFieldDisplayName(fieldName)} is required`;
       if (field.errors['email']) return 'Please enter a valid email';
-      if (field.errors['minlength']) return `${fieldName} must be at least ${field.errors['minlength'].requiredLength} characters`;
+      if (field.errors['minlength']) return `${this.getFieldDisplayName(fieldName)} must be at least ${field.errors['minlength'].requiredLength} characters`;
     }
     return '';
+  }
+
+  private getFieldDisplayName(fieldName: string): string {
+    const displayNames: Record<string, string> = {
+      'email': 'Email',
+      'password': 'Password'
+    };
+    return displayNames[fieldName] || fieldName;
   }
 }

@@ -58,10 +58,8 @@ export class Register {
       
       this.authService.register(registerData).subscribe({
         next: (response) => {
-          // Show success message and redirect to email verification notice
-          this.router.navigate(['/auth/verify-email'], {
-            queryParams: { email: response.data.email }
-          });
+          // Redirect to home page after successful registration
+          this.router.navigate(['/']);
         },
         error: (err) => {
           console.error('Registration error:', err);

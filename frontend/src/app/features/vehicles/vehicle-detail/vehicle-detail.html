@@ -1,0 +1,110 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Loading State -->
+  <div *ngIf="isLoading()" class="flex justify-center items-center h-screen">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error() && !isLoading()" class="container mx-auto px-4 py-8">
+    <div class="text-center">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">{{ error() }}</h2>
+      <button (click)="goBack()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+        Back to Vehicles
+      </button>
+    </div>
+  </div>
+
+  <!-- Vehicle Details -->
+  <div *ngIf="vehicle() && !isLoading()" class="container mx-auto px-4 py-8">
+    <!-- Back Button -->
+    <button (click)="goBack()" class="mb-6 flex items-center text-blue-600 hover:text-blue-800">
+      <i class="ri-arrow-left-line mr-2"></i>
+      Back to Vehicles
+    </button>
+
+    <!-- Vehicle Info -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
+        <!-- Images -->
+        <div>
+          <div class="mb-4">
+            <img 
+              [src]="vehicle()!.images[selectedImageIndex()] || '/assets/placeholder-car.jpg'"
+              [alt]="vehicle()!.make + ' ' + vehicle()!.model"
+              class="w-full h-96 object-cover rounded-lg">
+          </div>
+          <div class="flex space-x-2 overflow-x-auto">
+            <img 
+              *ngFor="let image of vehicle()!.images; let i = index"
+              [src]="image"
+              [alt]="'Image ' + (i + 1)"
+              (click)="selectImage(i)"
+              [class]="selectedImageIndex() === i ? 'border-2 border-blue-500' : 'border border-gray-200'"
+              class="w-16 h-16 object-cover rounded cursor-pointer">
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            {{ vehicle()!.make }} {{ vehicle()!.model }} {{ vehicle()!.year }}
+          </h1>
+          
+          <div class="flex items-center mb-4">
+            <span class="text-2xl font-bold text-blue-600">
+              ${{ vehicle()!.pricePerDay }}/day
+            </span>
+            <span *ngIf="vehicle()!.pricePerHour" class="ml-4 text-lg text-gray-600">
+              ${{ vehicle()!.pricePerHour }}/hour
+            </span>
+          </div>
+
+          <!-- Specifications -->
+          <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="flex items-center">
+              <i class="ri-car-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.category }}</span>
+            </div>
+            <div class="flex items-center">
+              <i class="ri-settings-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.transmission }}</span>
+            </div>
+            <div class="flex items-center">
+              <i class="ri-gas-station-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.fuelType }}</span>
+            </div>
+            <div class="flex items-center">
+              <i class="ri-user-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.seats }} seats</span>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div *ngIf="vehicle()!.description" class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Description</h3>
+            <p class="text-gray-600">{{ vehicle()!.description }}</p>
+          </div>
+
+          <!-- Features -->
+          <div *ngIf="vehicle()!.features?.length" class="mb-6">
+            <h3 class="text-lg font-semibold mb-2">Features</h3>
+            <div class="flex flex-wrap gap-2">
+              <span 
+                *ngFor="let feature of vehicle()!.features"
+                class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+                {{ feature }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Book Button -->
+          <button 
+            (click)="bookVehicle()"
+            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
+            Book This Vehicle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

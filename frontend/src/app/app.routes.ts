@@ -1,11 +1,63 @@
 import { Routes } from '@angular/router';
 import { UnauthGuard } from './core/guards/unauth.guard';
 import { EmailVerificationGuard } from './core/guards/email-verification.guard';
+import { AuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
     loadComponent: () => import('./features/home/home').then(m => m.Home)
+  },
+  {
+    path: 'vehicles',
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/vehicles/vehicle-list/vehicle-list').then(m => m.VehicleList)
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./features/vehicles/vehicle-detail/vehicle-detail').then(m => m.VehicleDetail)
+      }
+    ]
+  },
+  {
+    path: 'profile',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./features/profile/profile').then(m => m.Profile)
+  },
+  {
+    path: 'wishlist',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./features/wishlist/list/wishlist').then(m => m.Wishlist)
+  },
+  {
+    path: 'admin',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./features/admin/dashboard/dashboard').then(m => m.AdminDashboard),
+    children: [
+      { 
+        path: '', 
+        redirectTo: 'overview', 
+        pathMatch: 'full' 
+      },
+      {
+        path: 'overview',
+        loadComponent: () => import('./features/admin/dashboard-overview/dashboard-overview').then(m => m.DashboardOverview)
+      },
+      {
+        path: 'users',
+        loadComponent: () => import('./features/admin/user-management/user-management').then(m => m.UserManagement)
+      },
+      {
+        path: 'bookings',
+        loadComponent: () => import('./features/admin/booking-management/booking-management').then(m => m.BookingManagement)
+      },
+      {
+        path: 'vehicles',
+        loadComponent: () => import('./features/admin/vehicle-management/vehicle-management').then(m => m.VehicleManagement)
+      }
+    ]
   },
   {
     path: 'bookings',

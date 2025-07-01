@@ -12,7 +12,7 @@ export class UnauthGuard implements CanActivate {
   ) {}
 
   canActivate(): boolean {
-    if (!this.authService.isAuthenticated()) {
+    if (!this.authService.isUserAuthenticated()) {
       return true;
     }
     

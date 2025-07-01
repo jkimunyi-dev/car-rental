@@ -1,28 +1,41 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Admin } from '../admin';
-import { AdminBooking } from '../../../core/models/admin.models';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { AdminService } from '../../../core/services/admin.service';
+import { AdminBooking, BulkActionResult } from '../../../core/models/admin.models';
 
 @Component({
   selector: 'app-booking-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './booking-management.html',
   styleUrls: ['./booking-management.scss']
 })
 export class BookingManagement implements OnInit {
-  // Add Math property
   Math = Math;
-
+  
   bookings: AdminBooking[] = [];
   isLoading = true;
+  selectedBookings: string[] = [];
   
+  // Forms - Initialize with FormBuilder
+  searchForm!: FormGroup;
+  selectedBookingAction = '';
+  
+  // Modal states
+  showDetailsModal = false;
+  showActionModal = false;
+  showBulkActionModal = false;
+  selectedBooking: AdminBooking | null = null;
+  
+  // Filters
   filters = {
     search: '',
     status: '',
     dateFrom: '',
     dateTo: '',
+    minAmount: null as number | null,
+    maxAmount: null as number | null,
     page: 1,
     limit: 10,
     sortBy: 'createdAt',
@@ -32,13 +45,7 @@ export class BookingManagement implements OnInit {
   totalBookings = 0;
   totalPages = 0;
 
-  // Modal states
-  showActionModal = false;
-  selectedBooking: AdminBooking | null = null;
-  bookingAction = '';
-  actionReason = '';
-  actionNotes = '';
-
+  // Booking statuses
   bookingStatuses = [
     { value: '', label: 'All Status' },
     { value: 'PENDING', label: 'Pending' },
@@ -49,19 +56,53 @@ export class BookingManagement implements OnInit {
     { value: 'REJECTED', label: 'Rejected' }
   ];
 
-  constructor(private adminService: Admin) {}
+  // Booking actions
+  bookingActions = [
+    { value: 'approve', label: 'Approve Booking' },
+    { value: 'reject', label: 'Reject Booking' },
+    { value: 'cancel', label: 'Cancel Booking' },
+    { value: 'complete', label: 'Complete Booking' }
+  ];
+
+  // Bulk actions
+  bulkActions = [
+    { value: 'approve', label: 'Approve Selected' },
+    { value: 'reject', label: 'Reject Selected' },
+    { value: 'cancel', label: 'Cancel Selected' }
+  ];
+
+  selectedAction = '';
+  actionReason = '';
+  actionNotes = '';
+  selectedBulkAction = '';
+
+  constructor(
+    private adminService: AdminService,
+    private fb: FormBuilder
+  ) {
+    this.initializeForms();
+  }
 
   ngOnInit() {
     this.loadBookings();
+  }
+
+  initializeForms() {
+    this.searchForm = this.fb.group({
+      search: [''],
+      status: [''],
+      dateFrom: [''],
+      dateTo: ['']
+    });
   }
 
   loadBookings() {
     this.isLoading = true;
     this.adminService.getBookings(this.filters).subscribe({
       next: (response) => {
-        this.bookings = response.data.bookings;
-        this.totalBookings = response.data.pagination.total;
-        this.totalPages = response.data.pagination.totalPages;
+        this.bookings = response.data.bookings || response.data;
+        this.totalBookings = response.data.pagination?.total || response.data.length;
+        this.totalPages = response.data.pagination?.totalPages || Math.ceil(this.totalBookings / this.filters.limit);
         this.isLoading = false;
       },
       error: (error) => {
@@ -91,10 +132,58 @@ export class BookingManagement implements OnInit {
     this.loadBookings();
   }
 
+  // CRUD Operations
+  createBooking(bookingData: any) {
+    // Implementation for creating booking (if needed for admin)
+    console.log('Create booking:', bookingData);
+  }
+
+  updateBooking(bookingId: string, bookingData: Partial<AdminBooking>) {
+    this.adminService.updateBooking(bookingId, bookingData).subscribe({
+      next: (updatedBooking) => {
+        const index = this.bookings.findIndex(b => b.id === updatedBooking.id);
+        if (index > -1) {
+          this.bookings[index] = updatedBooking;
+        }
+        this.showSuccessMessage('Booking updated successfully');
+      },
+      error: (error) => {
+        console.error('Error updating booking:', error);
+        this.showErrorMessage('Failed to update booking');
+      }
+    });
+  }
+
+  deleteBooking(bookingId: string) {
+    if (confirm('Are you sure you want to delete this booking?')) {
+      this.adminService.deleteBooking(bookingId).subscribe({
+        next: () => {
+          this.bookings = this.bookings.filter(b => b.id !== bookingId);
+          this.showSuccessMessage('Booking deleted successfully');
+        },
+        error: (error) => {
+          console.error('Error deleting booking:', error);
+          this.showErrorMessage('Failed to delete booking');
+        }
+      });
+    }
+  }
+
+  // Booking Actions
+  openDetailsModal(booking: AdminBooking) {
+    this.selectedBooking = booking;
+    this.showDetailsModal = true;
+  }
+
+  closeDetailsModal() {
+    this.showDetailsModal = false;
+    this.selectedBooking = null;
+  }
+
   openActionModal(booking: AdminBooking) {
     this.selectedBooking = booking;
     this.showActionModal = true;
-    this.bookingAction = '';
+    this.selectedAction = '';
     this.actionReason = '';
     this.actionNotes = '';
   }
@@ -102,30 +191,91 @@ export class BookingManagement implements OnInit {
   closeActionModal() {
     this.showActionModal = false;
     this.selectedBooking = null;
-    this.bookingAction = '';
+    this.selectedAction = '';
     this.actionReason = '';
     this.actionNotes = '';
   }
 
   executeBookingAction() {
-    if (!this.selectedBooking || !this.bookingAction) return;
+    if (!this.selectedBooking || !this.selectedAction) return;
 
-    const action = {
-      action: this.bookingAction,
+    const actionData = {
+      action: this.selectedAction,
       reason: this.actionReason,
       notes: this.actionNotes
     };
 
-    this.adminService.handleBookingAction(this.selectedBooking.id, action).subscribe({
+    this.adminService.handleBookingAction(this.selectedBooking.id, actionData).subscribe({
       next: (updatedBooking) => {
-        const index = this.bookings.findIndex(b => b.id === this.selectedBooking!.id);
+        const index = this.bookings.findIndex(b => b.id === updatedBooking.id);
         if (index > -1) {
           this.bookings[index] = updatedBooking;
         }
+        this.showSuccessMessage('Booking action completed successfully');
         this.closeActionModal();
       },
       error: (error) => {
         console.error('Error executing booking action:', error);
+        this.showErrorMessage('Failed to execute booking action');
+      }
+    });
+  }
+
+  // Selection and bulk operations
+  toggleBookingSelection(bookingId: string) {
+    const index = this.selectedBookings.indexOf(bookingId);
+    if (index > -1) {
+      this.selectedBookings.splice(index, 1);
+    } else {
+      this.selectedBookings.push(bookingId);
+    }
+  }
+
+  selectAllBookings() {
+    if (this.selectedBookings.length === this.bookings.length) {
+      this.selectedBookings = [];
+    } else {
+      this.selectedBookings = this.bookings.map(b => b.id);
+    }
+  }
+
+  openBulkActionModal() {
+    this.showBulkActionModal = true;
+    this.selectedBulkAction = '';
+    this.actionReason = '';
+  }
+
+  closeBulkActionModal() {
+    this.showBulkActionModal = false;
+    this.selectedBulkAction = '';
+    this.actionReason = '';
+    this.actionNotes = '';
+  }
+
+  executeBulkAction() {
+    if (this.selectedBookings.length === 0 || !this.selectedBulkAction) return;
+
+    const actionData = {
+      action: this.selectedBulkAction,
+      reason: this.actionReason,
+      notes: this.actionNotes
+    };
+
+    this.adminService.handleBulkBookingAction(this.selectedBookings, actionData).subscribe({
+      next: (results: BulkActionResult) => {
+        results.successful.forEach((id) => {
+          const bookingIndex = this.bookings.findIndex(b => b.id === id);
+          if (bookingIndex > -1) {
+            // Update booking status based on action
+          }
+        });
+        this.showSuccessMessage(`${results.successful.length} bookings ${this.selectedBulkAction}d successfully`);
+        this.selectedBookings = [];
+        this.closeBulkActionModal();
+      },
+      error: (error: any) => {
+        console.error('Error executing bulk action:', error);
+        this.showErrorMessage('Failed to execute bulk action');
       }
     });
   }
@@ -152,5 +302,15 @@ export class BookingManagement implements OnInit {
       'REJECTED': []
     };
     return actions[booking.status] || [];
+  }
+
+  showSuccessMessage(message: string) {
+    // Implement success message display logic
+    console.log('Success:', message);
+  }
+
+  showErrorMessage(message: string) {
+    // Implement error message display logic
+    console.error('Error:', message);
   }
 }

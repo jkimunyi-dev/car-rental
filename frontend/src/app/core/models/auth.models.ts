@@ -4,6 +4,10 @@ export interface BaseResponse {
   timestamp: string;
 }
 
+export interface ApiResponse<T> extends BaseResponse {
+  data: T;
+}
+
 export interface DataResponse<T> extends BaseResponse {
   data: T;
 }

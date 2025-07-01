@@ -1,154 +1,127 @@
-<div class="admin-dashboard p-6">
-  <!-- Header -->
-  <div class="flex justify-between items-center mb-8">
-    <div>
-      <h1 class="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-      <p class="text-gray-600">Overview of your car rental business</p>
+<div class="admin-layout flex h-screen bg-gray-50">
+  <!-- Sidebar -->
+  <aside [class]="sidebarMinimized ? 'w-16' : 'w-64'" class="bg-white shadow-lg transition-all duration-300 ease-in-out">
+    <div class="flex flex-col h-full">
+      <!-- Logo -->
+      <div class="flex items-center justify-between p-4 border-b">
+        <div *ngIf="!sidebarMinimized" class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">M</span>
+          </div>
+          <span class="text-xl font-bold text-gray-900">Motii Admin</span>
+        </div>
+        <div *ngIf="sidebarMinimized" class="flex justify-center w-full">
+          <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span class="text-white font-bold text-sm">M</span>
+          </div>
+        </div>
+        <button 
+          (click)="toggleSidebar()" 
+          class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+          <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 p-4 space-y-2">
+        <a routerLink="/admin/overview" 
+           routerLinkActive="bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+           class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+           [title]="sidebarMinimized ? 'Dashboard Overview' : ''">
+          <svg class="w-6 h-6 text-gray-400 group-hover:text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v4H8V5z"></path>
+          </svg>
+          <span *ngIf="!sidebarMinimized" class="font-medium">Dashboard</span>
+        </a>
+
+        <a routerLink="/admin/users" 
+           routerLinkActive="bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+           class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+           [title]="sidebarMinimized ? 'User Management' : ''">
+          <svg class="w-6 h-6 text-gray-400 group-hover:text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+          </svg>
+          <span *ngIf="!sidebarMinimized" class="font-medium">User Management</span>
+        </a>
+
+        <a routerLink="/admin/vehicles" 
+           routerLinkActive="bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+           class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+           [title]="sidebarMinimized ? 'Vehicle Management' : ''">
+          <svg class="w-6 h-6 text-gray-400 group-hover:text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+          </svg>
+          <span *ngIf="!sidebarMinimized" class="font-medium">Vehicle Management</span>
+        </a>
+
+        <a routerLink="/admin/bookings" 
+           routerLinkActive="bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+           class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+           [title]="sidebarMinimized ? 'Booking Management' : ''">
+          <svg class="w-6 h-6 text-gray-400 group-hover:text-gray-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+          </svg>
+          <span *ngIf="!sidebarMinimized" class="font-medium">Booking Management</span>
+        </a>
+      </nav>
     </div>
-    
-    <!-- Period Selector -->
-    <div class="flex space-x-2">
-      <button 
-        *ngFor="let period of periods"
-        (click)="onPeriodChange(period)"
-        [class]="selectedPeriod === period ? 
-          'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
-        class="px-4 py-2 rounded-lg border border-gray-300 capitalize transition-colors">
-        {{ period }}
-      </button>
-    </div>
-  </div>
+  </aside>
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="flex justify-center items-center h-64">
-    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-  </div>
-
-  <!-- Analytics Content -->
-  <div *ngIf="!isLoading && analytics">
-    <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <!-- Total Users -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600">Total Users</p>
-            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalUsers }}</p>
-          </div>
-          <div class="flex items-center">
-            <span [class]="getGrowthColor(analytics.userGrowth)" class="text-sm font-medium">
-              {{ getGrowthIcon(analytics.userGrowth) }} {{ analytics.userGrowth | number:'1.1-1' }}%
-            </span>
-          </div>
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Top Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+      <div class="flex items-center justify-between px-6 py-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p class="text-gray-600">Manage your car rental business</p>
         </div>
-      </div>
-
-      <!-- Total Vehicles -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600">Total Vehicles</p>
-            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalVehicles }}</p>
-          </div>
-          <div class="flex items-center">
-            <span [class]="getGrowthColor(analytics.vehicleGrowth)" class="text-sm font-medium">
-              {{ getGrowthIcon(analytics.vehicleGrowth) }} {{ analytics.vehicleGrowth | number:'1.1-1' }}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Bookings -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600">Total Bookings</p>
-            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalBookings }}</p>
-          </div>
-          <div class="flex items-center">
-            <span [class]="getGrowthColor(analytics.bookingGrowth)" class="text-sm font-medium">
-              {{ getGrowthIcon(analytics.bookingGrowth) }} {{ analytics.bookingGrowth | number:'1.1-1' }}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Revenue -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-sm font-medium text-gray-600">Total Revenue</p>
-            <p class="text-3xl font-bold text-gray-900">${{ analytics.totalRevenue | number:'1.2-2' }}</p>
-          </div>
-          <div class="flex items-center">
-            <span [class]="getGrowthColor(analytics.revenueGrowth)" class="text-sm font-medium">
-              {{ getGrowthIcon(analytics.revenueGrowth) }} {{ analytics.revenueGrowth | number:'1.1-1' }}%
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Charts and Tables Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      <!-- Users by Role -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Users by Role</h3>
-        <div class="space-y-3">
-          <div *ngFor="let role of analytics.usersByRole | keyvalue" class="flex justify-between items-center">
-            <span class="capitalize text-gray-600">{{ role.key.toLowerCase() }}</span>
-            <span class="font-semibold">{{ role.value }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Bookings by Status -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Bookings by Status</h3>
-        <div class="space-y-3">
-          <div *ngFor="let status of analytics.bookingsByStatus | keyvalue" class="flex justify-between items-center">
-            <span class="capitalize text-gray-600">{{ status.key.toLowerCase() }}</span>
-            <span class="font-semibold">{{ status.value }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Top Performers -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <!-- Top Vehicles -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Performing Vehicles</h3>
-        <div class="space-y-4">
-          <div *ngFor="let vehicle of analytics.topVehicles" class="flex justify-between items-center p-3 bg-gray-50 rounded">
-            <div>
-              <p class="font-medium">{{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
-              <p class="text-sm text-gray-600">{{ vehicle.bookingCount }} bookings</p>
+        
+        <!-- Profile Dropdown -->
+        <div class="relative" clickOutside (clickOutside)="closeProfileDropdown()">
+          <button 
+            (click)="toggleProfileDropdown()"
+            class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+              <span class="text-white text-sm font-medium">
+                {{ currentUser?.firstName?.charAt(0) || 'U' }}{{ currentUser?.lastName?.charAt(0) || '' }}
+              </span>
             </div>
-            <div class="text-right">
-              <p class="font-semibold">${{ vehicle.totalRevenue | number:'1.2-2' }}</p>
-              <p class="text-sm text-gray-600">★ {{ vehicle.averageRating | number:'1.1-1' }}</p>
+            <div class="text-left" *ngIf="currentUser">
+              <p class="text-sm font-medium text-gray-900">{{ currentUser.firstName }} {{ currentUser.lastName }}</p>
+              <p class="text-xs text-gray-500">{{ currentUser.role }}</p>
+            </div>
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div *ngIf="showProfileDropdown" 
+               class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+            <div class="py-1">
+              <button 
+                (click)="navigateToProfile()"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                View Profile
+              </button>
+              <button 
+                (click)="logout()"
+                class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                Sign out
+              </button>
             </div>
           </div>
         </div>
       </div>
+    </header>
 
-      <!-- Top Customers -->
-      <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">Top Customers</h3>
-        <div class="space-y-4">
-          <div *ngFor="let customer of analytics.topCustomers" class="flex justify-between items-center p-3 bg-gray-50 rounded">
-            <div>
-              <p class="font-medium">{{ customer.firstName }} {{ customer.lastName }}</p>
-              <p class="text-sm text-gray-600">{{ customer.bookingCount }} bookings</p>
-            </div>
-            <div class="text-right">
-              <p class="font-semibold">${{ customer.totalSpent | number:'1.2-2' }}</p>
-              <p class="text-sm text-gray-600">Since {{ customer.joinDate | date:'MMM yyyy' }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Dashboard Content Area -->
+    <main class="flex-1 overflow-y-auto p-6">
+      <router-outlet></router-outlet>
+    </main>
   </div>
 </div>

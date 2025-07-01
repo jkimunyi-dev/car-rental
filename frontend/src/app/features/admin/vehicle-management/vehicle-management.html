@@ -92,7 +92,7 @@
   <div class="bg-white rounded-lg shadow overflow-hidden">
     <!-- Loading State -->
     <div *ngIf="isLoading" class="flex justify-center items-center h-64">
-      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div class="loading-spinner h-12 w-12"></div>
     </div>
 
     <!-- Table -->
@@ -102,7 +102,7 @@
           <tr>
             <th class="px-4 py-3 text-left">
               <input 
-                type="checkbox" 
+                type="checkbox"
                 [checked]="selectedVehicles.length === vehicles.length && vehicles.length > 0"
                 (change)="selectAllVehicles()"
                 class="rounded border-gray-300">
@@ -126,7 +126,7 @@
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 (click)="onSort('createdAt')">
-              Added
+              Created
               <span *ngIf="filters.sortBy === 'createdAt'">
                 {{ filters.sortOrder === 'asc' ? '↑' : '↓' }}
               </span>
@@ -138,33 +138,35 @@
           <tr *ngFor="let vehicle of vehicles" class="hover:bg-gray-50">
             <td class="px-4 py-4">
               <input 
-                type="checkbox" 
+                type="checkbox"
                 [checked]="selectedVehicles.includes(vehicle.id)"
                 (change)="toggleVehicleSelection(vehicle.id)"
                 class="rounded border-gray-300">
             </td>
             <td class="px-4 py-4">
               <div class="flex items-center">
-                <img *ngIf="vehicle.images && vehicle.images.length > 0" 
-                     [src]="vehicle.images[0]" 
-                     [alt]="vehicle.make + ' ' + vehicle.model"
-                     class="h-12 w-16 rounded-lg object-cover mr-3">
-                <div *ngIf="!vehicle.images || vehicle.images.length === 0" 
-                     class="h-12 w-16 rounded-lg bg-gray-200 flex items-center justify-center mr-3">
-                  <span class="text-gray-400 text-xs">No Image</span>
+                <div class="flex-shrink-0 h-16 w-16 mr-4">
+                  <img *ngIf="vehicle.images && vehicle.images.length > 0"
+                       [src]="vehicle.images[0]"
+                       [alt]="vehicle.make + ' ' + vehicle.model"
+                       class="h-16 w-16 rounded-lg object-cover">
+                  <div *ngIf="!vehicle.images || vehicle.images.length === 0"
+                       class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                  </div>
                 </div>
                 <div>
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ vehicle.make }} {{ vehicle.model }} {{ vehicle.year }}
-                  </div>
-                  <div class="text-sm text-gray-500">{{ vehicle.licensePlate }}</div>
+                  <div class="text-sm font-medium text-gray-900">{{ vehicle.make }} {{ vehicle.model }}</div>
+                  <div class="text-sm text-gray-500">{{ vehicle.year }} • {{ vehicle.licensePlate || 'N/A' }}</div>
                 </div>
               </div>
             </td>
             <td class="px-4 py-4">
               <span [class]="getCategoryColor(vehicle.category)"
                     class="inline-flex px-2 py-1 text-xs font-semibold rounded-full">
-                {{ vehicle.category | titlecase }}
+                {{ vehicle.category }}
               </span>
             </td>
             <td class="px-4 py-4 text-sm font-medium text-gray-900">
@@ -175,7 +177,8 @@
               <select 
                 [value]="vehicle.status"
                 (change)="updateVehicleStatus(vehicle.id, $event)"
-                class="text-sm border border-gray-300 rounded px-2 py-1">
+                [class]="getStatusColor(vehicle.status)"
+                class="text-xs font-semibold rounded-full px-2 py-1 border-0">
                 <option value="AVAILABLE">Available</option>
                 <option value="RENTED">Rented</option>
                 <option value="MAINTENANCE">Maintenance</option>
@@ -187,12 +190,12 @@
               <div class="flex space-x-2">
                 <button 
                   (click)="openEditModal(vehicle)"
-                  class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                  class="text-blue-600 hover:text-blue-900 text-sm font-medium">
                   Edit
                 </button>
                 <button 
                   (click)="openDeleteModal(vehicle)"
-                  class="text-red-600 hover:text-red-800 text-sm font-medium">
+                  class="text-red-600 hover:text-red-900 text-sm font-medium">
                   Delete
                 </button>
               </div>
@@ -218,14 +221,8 @@
               class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
               Previous
             </button>
-            <span 
-              *ngFor="let page of [].constructor(Math.min(totalPages, 5)); let i = index"
-              class="relative inline-flex items-center px-4 py-2 border text-sm font-medium"
-              [class]="(i + 1) === filters.page ? 
-                'z-10 bg-blue-50 border-blue-500 text-blue-600' : 
-                'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 cursor-pointer'"
-              (click)="onPageChange(i + 1)">
-              {{ i + 1 }}
+            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              {{ filters.page }} of {{ totalPages }}
             </span>
             <button 
               [disabled]="filters.page === totalPages"
@@ -254,7 +251,7 @@
           <input 
             type="text"
             [(ngModel)]="editForm.make"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
 
         <div>
@@ -262,7 +259,7 @@
           <input 
             type="text"
             [(ngModel)]="editForm.model"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
 
         <div>
@@ -270,7 +267,7 @@
           <input 
             type="number"
             [(ngModel)]="editForm.year"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
 
         <div>
@@ -278,18 +275,15 @@
           <input 
             type="number"
             [(ngModel)]="editForm.pricePerDay"
-            step="0.01"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
 
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
           <select 
             [(ngModel)]="editForm.category"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
-            <option *ngFor="let category of vehicleCategories.slice(1)" [value]="category.value">
-              {{ category.label }}
-            </option>
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <option *ngFor="let category of vehicleCategories" [value]="category.value">{{ category.label }}</option>
           </select>
         </div>
 
@@ -298,7 +292,7 @@
           <input 
             type="text"
             [(ngModel)]="editForm.location"
-            class="w-full border border-gray-300 rounded-lg px-3 py-2">
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
         </div>
       </div>
 

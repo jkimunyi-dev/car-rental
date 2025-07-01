@@ -1,0 +1,146 @@
+<div class="dashboard-overview">
+  <!-- Period Selector -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-gray-900">Dashboard Overview</h2>
+      <p class="text-gray-600">Get insights into your car rental business</p>
+    </div>
+    
+    <div class="flex space-x-2">
+      <button 
+        *ngFor="let period of periods"
+        (click)="onPeriodChange(period)"
+        [class]="selectedPeriod === period ? 
+          'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+        class="px-4 py-2 rounded-lg border border-gray-300 capitalize transition-colors">
+        {{ period }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex justify-center items-center h-64">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+
+  <!-- Analytics Content -->
+  <div *ngIf="!isLoading && analytics">
+    <!-- Key Metrics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Users -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Users</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalUsers | number }}</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-center mt-4">
+          <span [class]="getGrowthColor(analytics.userGrowth)" class="text-sm font-medium">
+            {{ getGrowthIcon(analytics.userGrowth) }} {{ analytics.userGrowth | number:'1.1-1' }}%
+          </span>
+          <span class="text-gray-500 text-sm ml-1">vs last {{ selectedPeriod }}</span>
+        </div>
+      </div>
+
+      <!-- Total Vehicles -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Vehicles</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalVehicles | number }}</p>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-center mt-4">
+          <span [class]="getGrowthColor(analytics.vehicleGrowth)" class="text-sm font-medium">
+            {{ getGrowthIcon(analytics.vehicleGrowth) }} {{ analytics.vehicleGrowth | number:'1.1-1' }}%
+          </span>
+          <span class="text-gray-500 text-sm ml-1">vs last {{ selectedPeriod }}</span>
+        </div>
+      </div>
+
+      <!-- Total Bookings -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Bookings</p>
+            <p class="text-3xl font-bold text-gray-900">{{ analytics.totalBookings | number }}</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-center mt-4">
+          <span [class]="getGrowthColor(analytics.bookingGrowth)" class="text-sm font-medium">
+            {{ getGrowthIcon(analytics.bookingGrowth) }} {{ analytics.bookingGrowth | number:'1.1-1' }}%
+          </span>
+          <span class="text-gray-500 text-sm ml-1">vs last {{ selectedPeriod }}</span>
+        </div>
+      </div>
+
+      <!-- Total Revenue -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Revenue</p>
+            <p class="text-3xl font-bold text-gray-900">${{ analytics.totalRevenue | number:'1.2-2' }}</p>
+          </div>
+          <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-center mt-4">
+          <span [class]="getGrowthColor(analytics.revenueGrowth)" class="text-sm font-medium">
+            {{ getGrowthIcon(analytics.revenueGrowth) }} {{ analytics.revenueGrowth | number:'1.1-1' }}%
+          </span>
+          <span class="text-gray-500 text-sm ml-1">vs last {{ selectedPeriod }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <!-- Users by Role -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Users by Role</h3>
+        <div class="space-y-4">
+          <div *ngFor="let role of analytics.usersByRole | keyvalue" class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+              <span class="text-sm font-medium text-gray-900">{{ role.key }}</span>
+            </div>
+            <span class="text-sm text-gray-600">{{ role.value | number }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 class="text-lg font-semibold text-gray-900 mb-6">Recent Activity</h3>
+        <div class="space-y-4">
+          <div *ngFor="let activity of analytics.recentActivity" class="flex items-start">
+            <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3"></div>
+            <div class="flex-1">
+              <p class="text-sm text-gray-900">{{ activity.description }}</p>
+              <p class="text-xs text-gray-500">{{ activity.timestamp | date:'MMM d, yyyy h:mm a' }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

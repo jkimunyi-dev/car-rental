@@ -15,12 +15,13 @@ import {
   VerifyEmailRequest,
   ResendVerificationRequest
 } from '../models/auth.models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class Auth {
-  private readonly API_URL = 'http://localhost:3000/api/auth';
+  private readonly API_URL = `${environment.apiUrl}/auth`;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   
@@ -208,6 +209,22 @@ export class Auth {
   private getStoredUser(): User | null {
     const userData = localStorage.getItem('user');
     return userData ? JSON.parse(userData) : null;
+  }
+
+  // Add method to check if user is authenticated
+  isUserAuthenticated(): boolean {
+    return this.isAuthenticated();
+  }
+
+  // Add method to check user roles
+  hasRole(role: string): boolean {
+    const currentUser = this.currentUser();
+    return currentUser ? currentUser.role === role : false;
+  }
+
+  // Add method to get current user
+  getCurrentUser(): User | null {
+    return this.currentUser();
   }
 
   // Observables for components that need reactive updates

@@ -1,0 +1,222 @@
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-900">Profile Settings</h1>
+        <button 
+          (click)="onLogout()"
+          class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Profile Header -->
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+      <div class="flex items-center">
+        <div class="bg-blue-600 text-white w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold">
+          {{ getUserInitials() }}
+        </div>
+        <div class="ml-4">
+          <h2 class="text-xl font-bold text-gray-900">{{ getUserFullName() }}</h2>
+          <p class="text-gray-600">{{ user()?.email }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow mb-8">
+      <div class="border-b border-gray-200">
+        <nav class="flex">
+          <button
+            (click)="setActiveTab('profile')"
+            [class]="activeTab() === 'profile' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            class="py-2 px-4 border-b-2 font-medium text-sm">
+            Profile Information
+          </button>
+          <button
+            (click)="setActiveTab('password')"
+            [class]="activeTab() === 'password' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+            class="py-2 px-4 border-b-2 font-medium text-sm">
+            Change Password
+          </button>
+        </nav>
+      </div>
+
+      <!-- Success/Error Messages -->
+      <div *ngIf="successMessage()" class="p-4 bg-green-50 border border-green-200">
+        <p class="text-green-800">{{ successMessage() }}</p>
+      </div>
+      
+      <div *ngIf="error()" class="p-4 bg-red-50 border border-red-200">
+        <p class="text-red-800">{{ error() }}</p>
+      </div>
+
+      <!-- Profile Tab -->
+      <div *ngIf="activeTab() === 'profile'" class="p-6">
+        <form [formGroup]="profileForm" (ngSubmit)="onUpdateProfile()">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- First Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+              <input
+                type="text"
+                formControlName="firstName"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                [class.border-red-300]="profileForm.get('firstName')?.touched && profileForm.get('firstName')?.errors">
+              <p *ngIf="getFieldError(profileForm, 'firstName')" class="mt-1 text-sm text-red-600">
+                {{ getFieldError(profileForm, 'firstName') }}
+              </p>
+            </div>
+
+            <!-- Last Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+              <input
+                type="text"
+                formControlName="lastName"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                [class.border-red-300]="profileForm.get('lastName')?.touched && profileForm.get('lastName')?.errors">
+              <p *ngIf="getFieldError(profileForm, 'lastName')" class="mt-1 text-sm text-red-600">
+                {{ getFieldError(profileForm, 'lastName') }}
+              </p>
+            </div>
+
+            <!-- Email (disabled) -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input
+                type="email"
+                formControlName="email"
+                [disabled]="true"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 cursor-not-allowed">
+            </div>
+
+            <!-- Phone -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <input
+                type="tel"
+                formControlName="phone"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- Date of Birth -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+              <input
+                type="date"
+                formControlName="dateOfBirth"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- Address -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <input
+                type="text"
+                formControlName="address"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- City -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <input
+                type="text"
+                formControlName="city"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- Country -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <input
+                type="text"
+                formControlName="country"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+
+            <!-- ZIP Code -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">ZIP Code</label>
+              <input
+                type="text"
+                formControlName="zipCode"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button
+              type="submit"
+              [disabled]="isLoading() || profileForm.invalid"
+              class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="isLoading()">Updating...</span>
+              <span *ngIf="!isLoading()">Update Profile</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Password Tab -->
+      <div *ngIf="activeTab() === 'password'" class="p-6">
+        <form [formGroup]="passwordForm" (ngSubmit)="onChangePassword()">
+          <div class="space-y-6">
+            <!-- Current Password -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+              <input
+                type="password"
+                formControlName="currentPassword"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                [class.border-red-300]="passwordForm.get('currentPassword')?.touched && passwordForm.get('currentPassword')?.errors">
+              <p *ngIf="getFieldError(passwordForm, 'currentPassword')" class="mt-1 text-sm text-red-600">
+                {{ getFieldError(passwordForm, 'currentPassword') }}
+              </p>
+            </div>
+
+            <!-- New Password -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+              <input
+                type="password"
+                formControlName="newPassword"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                [class.border-red-300]="passwordForm.get('newPassword')?.touched && passwordForm.get('newPassword')?.errors">
+              <p *ngIf="getFieldError(passwordForm, 'newPassword')" class="mt-1 text-sm text-red-600">
+                {{ getFieldError(passwordForm, 'newPassword') }}
+              </p>
+            </div>
+
+            <!-- Confirm Password -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+              <input
+                type="password"
+                formControlName="confirmPassword"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                [class.border-red-300]="passwordForm.get('confirmPassword')?.touched && passwordForm.get('confirmPassword')?.errors">
+              <p *ngIf="getFieldError(passwordForm, 'confirmPassword')" class="mt-1 text-sm text-red-600">
+                {{ getFieldError(passwordForm, 'confirmPassword') }}
+              </p>
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <button
+              type="submit"
+              [disabled]="isLoading() || passwordForm.invalid"
+              class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <span *ngIf="isLoading()">Changing...</span>
+              <span *ngIf="!isLoading()">Change Password</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,203 @@
+### Admin API Tests for Car Rental System
+
+### Variables
+@baseUrl = http://localhost:3000/api
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzA2MjM0LCJleHAiOjE3NTEzMDk4MzR9.IgPnVlLUk_g6OCw2sB00OHk7CLzPSe7ZBdBMJi9JSVg
+
+### 1. Get Analytics
+GET {{baseUrl}}/admin/analytics?period=month
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 2. Get Analytics - Weekly
+GET {{baseUrl}}/admin/analytics?period=week
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 3. Get Users List
+GET {{baseUrl}}/admin/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 4. Get Users with Filters
+GET {{baseUrl}}/admin/users?role=USER&isActive=true&search=john&page=1&limit=5
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 5. Update User Role
+PUT {{baseUrl}}/admin/users/user-id-here/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "FLEET_MANAGER"
+}
+
+###
+
+### 6. Update User Status
+PUT {{baseUrl}}/admin/users/user-id-here/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+###
+
+### 7. Bulk User Action
+POST {{baseUrl}}/admin/users/bulk-action
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userIds": ["user-id-1", "user-id-2"],
+  "action": "activate",
+  "reason": "Bulk activation for verified users"
+}
+
+###
+
+### 8. Get Bookings List
+GET {{baseUrl}}/admin/bookings?page=1&limit=10&status=PENDING
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 9. Get Bookings with Filters
+GET {{baseUrl}}/admin/bookings?dateFrom=2024-01-01&dateTo=2024-12-31&minAmount=100&maxAmount=1000
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 10. Handle Booking Action - Approve
+PUT {{baseUrl}}/admin/bookings/booking-id-here/action
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "action": "approve",
+  "notes": "Booking approved after verification"
+}
+
+###
+
+### 11. Handle Booking Action - Reject
+PUT {{baseUrl}}/admin/bookings/booking-id-here/action
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "action": "reject",
+  "reason": "Insufficient documentation",
+  "notes": "Please provide valid driver's license"
+}
+
+###
+
+### 12. Get Disputes
+GET {{baseUrl}}/admin/disputes
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 13. Update Dispute
+PUT {{baseUrl}}/admin/disputes/dispute-id-here
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "investigating",
+  "priority": "high",
+  "adminNotes": "Escalated to senior management"
+}
+
+###
+
+### 14. Get System Settings
+GET {{baseUrl}}/admin/settings
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 15. Update System Setting
+PUT {{baseUrl}}/admin/settings
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "key": "maintenance_mode",
+  "value": "false"
+}
+
+###
+
+### 16. Generate Revenue Report
+GET {{baseUrl}}/admin/reports/generate?type=revenue&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=month&format=json
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 17. Generate Bookings Report
+GET {{baseUrl}}/admin/reports/generate?type=bookings&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=week
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 18. Generate Users Report
+GET {{baseUrl}}/admin/reports/generate?type=users&dateFrom=2024-01-01&dateTo=2024-12-31&groupBy=month
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 19. Generate Performance Report
+GET {{baseUrl}}/admin/reports/generate?type=performance&dateFrom=2024-01-01&dateTo=2024-12-31
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+###
+
+### 20. Error Test - Invalid User ID
+PUT {{baseUrl}}/admin/users/invalid-user-id/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "ADMIN"
+}
+
+###
+
+### 21. Error Test - Unauthorized Access (No Token)
+GET {{baseUrl}}/admin/analytics
+Content-Type: application/json
+
+###
+
+### 22. Error Test - Invalid Bulk Action
+POST {{baseUrl}}/admin/users/bulk-action
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "userIds": [],
+  "action": "invalid_action"
+}
+
+###
