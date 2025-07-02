@@ -43,6 +43,7 @@ export interface CreateBookingDto {
   endTime?: string;
   pickupLocation: string;
   dropoffLocation?: string;
+  phoneNumber: string; // Make this required
   notes?: string;
   couponCode?: string;
   isHourlyBooking?: boolean;
