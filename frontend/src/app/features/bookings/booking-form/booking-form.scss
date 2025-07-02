@@ -1,4 +1,33 @@
 // Booking form specific styles
 .booking-form {
   // Add any booking form-specific styles here
+  .form-section {
+    margin-bottom: 2rem;
+  }
+  
+  .pricing-summary {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+  
+  .availability-indicator {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    
+    &.available {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    
+    &.unavailable {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+  }
 }

@@ -1,10 +1,7 @@
 ### Variables
 @baseUrl = http://localhost:3000/api
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzA2MjM0LCJleHAiOjE3NTEzMDk4MzR9.IgPnVlLUk_g6OCw2sB00OHk7CLzPSe7ZBdBMJi9JSVg
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxMzk0ODYzLCJleHAiOjE3NTEzOTg0NjN9.3iT7CV2J85LiQiSF8vN9imflecOikb3ZkUtaV7qORgo
 @agentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoaHNwMHEwMDAwOXp4bzBxOTBidTZlIiwiaWF0IjoxNzUxMTkwOTQ0LCJleHAiOjE3NTExOTQ1NDR9.qDRnkJyPbGk8eQGv1Vin_iCxs10-LuMMfAnzbjZCdVY
-@userToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnZ1aGEwMDAwOXo0aTRvcmczNHIxIiwiaWF0IjoxNzUxMTkwOTk2LCJleHAiOjE3NTExOTQ1OTZ9.m_jNuqDiGUE6lW1exUUiL6H7nyO1LC1b0Xf9951A5t8
-@secondUserToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTkxMDE1LCJleHAiOjE3NTExOTQ2MTV9.GPySUpACJT8Nf7QwW-4Ng0rLqhAWefwZbd3vMOl3XzM
-@thirdUserToken = 
 
 ### 1. Authentication - Login as Admin (Main user from seed)
 POST {{baseUrl}}/auth/login
@@ -66,709 +63,248 @@ GET {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
 ### 14. GET Vehicle Availability Calendar - Replace with actual vehicle ID
 GET {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/availability/2025/7
 
-### 15. CREATE Vehicle (Admin Only) - Toyota Prius
+### 15. CREATE Vehicle with Multiple Images (Admin Only) - Toyota Prius
 POST {{baseUrl}}/vehicles
 Authorization: Bearer {{adminToken}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
-{
-  "make": "Toyota",
-  "model": "Prius",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "AUTOMATIC",
-  "fuelType": "HYBRID",
-  "seats": 5,
-  "doors": 4,
-  "color": "Silver",
-  "licensePlate": "KCD-003C",
-  "pricePerDay": 65.00,
-  "pricePerHour": 10.00,
-  "location": "Nairobi, Kenya",
-  "description": "Eco-friendly hybrid sedan with excellent fuel economy",
-  "features": ["Air Conditioning", "Bluetooth", "GPS", "USB Charging", "Backup Camera"]
-}
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="make"
 
-### 16. CREATE Vehicle with VIN (Admin Only) - Mercedes C-Class
+Toyota
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="model"
+
+Prius
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="year"
+
+2023
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="category"
+
+SEDAN
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="transmission"
+
+AUTOMATIC
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="fuelType"
+
+HYBRID
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="seats"
+
+5
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="doors"
+
+4
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="color"
+
+Silver
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="licensePlate"
+
+KCD-IMG-001
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pricePerDay"
+
+65.00
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pricePerHour"
+
+10.00
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="location"
+
+Nairobi, Kenya
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="description"
+
+Eco-friendly hybrid sedan with excellent fuel economy
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="features"
+
+Air Conditioning,Bluetooth,GPS,USB Charging,Backup Camera
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="avatar.jpeg"
+Content-Type: image/jpeg
+
+< ./public/assets/avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="new-avatar.jpeg"
+Content-Type: image/jpeg
+
+< ./public/assets/new-avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="user-avatar.jpeg"
+Content-Type: image/jpeg
+
+< ./public/assets/user-avatar.jpeg
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### 16. CREATE Vehicle with PNG Images (Admin Only) - Mercedes C-Class  
 POST {{baseUrl}}/vehicles
 Authorization: Bearer {{adminToken}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
-{
-  "make": "Mercedes-Benz",
-  "model": "C-Class",
-  "year": 2024,
-  "category": "LUXURY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Black",
-  "licensePlate": "KCE-004D",
-  "vin": "WDDGF8AB4DR123456",
-  "pricePerDay": 120.00,
-  "pricePerHour": 18.00,
-  "location": "Nairobi, Kenya",
-  "description": "Luxury sedan with premium features and comfort",
-  "features": ["Air Conditioning", "Leather Seats", "Sunroof", "GPS", "Premium Sound", "Heated Seats"]
-}
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="make"
 
-### 17. CREATE Vehicle - Ford Explorer SUV
+Mercedes-Benz
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="model"
+
+C-Class
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="year"
+
+2024
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="category"
+
+LUXURY
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="transmission"
+
+AUTOMATIC
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="fuelType"
+
+PETROL
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="seats"
+
+5
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="doors"
+
+4
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="color"
+
+Black
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="licensePlate"
+
+KCE-IMG-002
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="vin"
+
+WDDGF8AB4DR123456
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pricePerDay"
+
+120.00
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pricePerHour"
+
+18.00
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="location"
+
+Nairobi, Kenya
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="description"
+
+Luxury sedan with premium features and comfort
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="features"
+
+Air Conditioning,Leather Seats,Sunroof,GPS,Premium Sound,Heated Seats
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="Coding.png"
+Content-Type: image/png
+
+< ./public/assets/Coding.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="figma.png"
+Content-Type: image/png
+
+< ./public/assets/figma.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="swift.png"
+Content-Type: image/png
+
+< ./public/assets/swift.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="visual-studio-code.png"
+Content-Type: image/png
+
+< ./public/assets/visual-studio-code.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Alternative: Test with JSON string format for features
 POST {{baseUrl}}/vehicles
 Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Ford",
-  "model": "Explorer",
-  "year": 2023,
-  "category": "SUV",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 7,
-  "doors": 5,
-  "color": "Blue",
-  "licensePlate": "KCF-005E",
-  "pricePerDay": 85.00,
-  "pricePerHour": 14.00,
-  "location": "Mombasa, Kenya",
-  "description": "Spacious 7-seater SUV perfect for family adventures",
-  "features": ["Air Conditioning", "4WD", "Third Row Seating", "GPS", "Bluetooth", "Tow Package"]
-}
-
-### 18. CREATE Vehicle - Nissan Versa Economy
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Nissan",
-  "model": "Versa",
-  "year": 2022,
-  "category": "ECONOMY",
-  "transmission": "MANUAL",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "White",
-  "licensePlate": "KCG-006F",
-  "pricePerDay": 35.00,
-  "pricePerHour": 6.00,
-  "location": "Kisumu, Kenya",
-  "description": "Affordable and fuel-efficient compact car",
-  "features": ["Air Conditioning", "Radio", "USB Port"]
-}
-
-### 19. CREATE Vehicle with Duplicate License Plate (Should Fail)
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Corolla",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KCA-001A",
-  "pricePerDay": 55.00,
-  "location": "Nairobi, Kenya"
-}
-
-### 20. CREATE Vehicle - Unauthorized (Second User as Customer) - Should Fail
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{secondUserToken}}
-Content-Type: application/json
-
-{
-  "make": "BMW",
-  "model": "X5",
-  "year": 2023,
-  "category": "LUXURY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 5,
-  "color": "Gray",
-  "licensePlate": "KCH-007G",
-  "pricePerDay": 150.00,
-  "location": "Nairobi, Kenya"
-}
-
-### 21. CREATE Vehicle - Unauthorized (Third User as Customer) - Should Fail
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{thirdUserToken}}
-Content-Type: application/json
-
-{
-  "make": "Audi",
-  "model": "Q7",
-  "year": 2023,
-  "category": "LUXURY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 7,
-  "doors": 5,
-  "color": "Silver",
-  "licensePlate": "KCJ-008H",
-  "pricePerDay": 180.00,
-  "location": "Nairobi, Kenya"
-}
-
-### 22. UPDATE Vehicle (Admin)
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "pricePerDay": 75.00,
-  "pricePerHour": 12.50,
-  "description": "Updated: Comfortable sedan perfect for business trips with enhanced features",
-  "features": ["Air Conditioning", "Bluetooth", "GPS", "USB Charging", "Backup Camera", "Lane Assist"]
-}
-
-### 23. UPDATE Vehicle Location and Mileage (Agent)
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "location": "Mombasa, Kenya",
-  "description": "Vehicle relocated to Mombasa branch"
-}
-
-### 24. UPDATE Vehicle - Unauthorized Field by Agent (Should Partially Fail)
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "pricePerDay": 90.00,
-  "location": "Nakuru, Kenya",
-  "status": "MAINTENANCE"
-}
-
-### 25. UPDATE Vehicle Status/Availability (Admin)
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/availability
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "status": "MAINTENANCE"
-}
-
-### 26. UPDATE Vehicle Status (Agent)
-PATCH {{baseUrl}}/vehicles/cmchi3ljd000d9zxo1p5kupry/availability
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "status": "AVAILABLE"
-}
-
-### 27. UPDATE Vehicle Status - Unauthorized (Second User as Customer) - Should Fail
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/availability
-Authorization: Bearer {{secondUserToken}}
-Content-Type: application/json
-
-{
-  "status": "INACTIVE"
-}
-
-### 28. UPDATE Vehicle Status - Unauthorized (Third User as Customer) - Should Fail
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/availability
-Authorization: Bearer {{thirdUserToken}}
-Content-Type: application/json
-
-{
-  "status": "INACTIVE"
-}
-
-### 29. UPDATE Non-existent Vehicle (Should Fail)
-PATCH {{baseUrl}}/vehicles/non-existent-id
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "pricePerDay": 100.00
-}
-
-### 30. Export Vehicles as JSON (Admin)
-GET {{baseUrl}}/vehicles/export?format=json
-Authorization: Bearer {{adminToken}}
-
-### 31. Export Vehicles as CSV (Admin)
-GET {{baseUrl}}/vehicles/export?format=csv
-Authorization: Bearer {{adminToken}}
-
-### 32. Export Vehicles - Unauthorized (Second User) - Should Fail
-GET {{baseUrl}}/vehicles/export
-Authorization: Bearer {{secondUserToken}}
-
-### 33. Export Vehicles - Unauthorized (Third User) - Should Fail
-GET {{baseUrl}}/vehicles/export
-Authorization: Bearer {{thirdUserToken}}
-
-### 34. Remove Vehicle Image (Admin)
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/images
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "imageUrl": "https://example.com/image-to-remove.jpg"
-}
-
-### 35. Remove Vehicle Image - Missing URL (Should Fail)
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/images
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{}
-
-### 36. Remove Vehicle Image (Agent)
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/images
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "imageUrl": "https://example.com/another-image.jpg"
-}
-
-### 37. Remove Vehicle Image - Unauthorized (Customer) - Should Fail
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789/images
-Authorization: Bearer {{secondUserToken}}
-Content-Type: application/json
-
-{
-  "imageUrl": "https://example.com/image.jpg"
-}
-
-### 38. DELETE Vehicle (Admin Only)
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{adminToken}}
-
-### 39. DELETE Vehicle - Unauthorized (Agent) - Should Fail
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{agentToken}}
-
-### 40. DELETE Vehicle - Unauthorized (Second User) - Should Fail
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{secondUserToken}}
-
-### 41. DELETE Vehicle - Unauthorized (Third User) - Should Fail
-DELETE {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{thirdUserToken}}
-
-### 42. DELETE Non-existent Vehicle (Should Fail)
-DELETE {{baseUrl}}/vehicles/non-existent-id
-Authorization: Bearer {{adminToken}}
-
-### 43. Test Edge Cases - Invalid Category
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Test",
-  "year": 2023,
-  "category": "INVALID_CATEGORY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KCZ-999Z",
-  "pricePerDay": 50.00,
-  "location": "Test Location"
-}
-
-### 44. Test Edge Cases - Invalid Year (Too Old)
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Old Car",
-  "year": 1800,
-  "category": "SEDAN",
-  "transmission": "MANUAL",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KCY-998Y",
-  "pricePerDay": 50.00,
-  "location": "Test Location"
-}
-
-### 45. Test Edge Cases - Invalid Seats Count
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "No Seats",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 0,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KCX-997X",
-  "pricePerDay": 50.00,
-  "location": "Test Location"
-}
-
-### 46. Test Edge Cases - Negative Price
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Free Car",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "AUTOMATIC",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KCW-996W",
-  "pricePerDay": -50.00,
-  "location": "Test Location"
-}
-
-### 47. Test Edge Cases - Missing Required Fields
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Incomplete"
-}
-
-### 48. GET Vehicles with Invalid Pagination
-GET {{baseUrl}}/vehicles?page=0&limit=0
-
-### 49. GET Vehicles with Large Pagination
-GET {{baseUrl}}/vehicles?page=1&limit=200
-
-### 50. Search with Invalid Date Format
-GET {{baseUrl}}/vehicles?startDate=invalid-date&endDate=2025-07-05
-
-### 51. Search with Invalid Price Range
-GET {{baseUrl}}/vehicles?minPrice=-100&maxPrice=-50
-
-### 52. GET Vehicle with Invalid ID Format
-GET {{baseUrl}}/vehicles/invalid-id-format
-
-### 53. Test Vehicle Creation with Maximum Features
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Audi",
-  "model": "A8L",
-  "year": 2024,
-  "category": "LUXURY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "HYBRID",
-  "seats": 5,
-  "doors": 4,
-  "color": "Pearl White",
-  "licensePlate": "KDL-100A",
-  "vin": "WAUZZZ4G2EN123456",
-  "pricePerDay": 250.00,
-  "pricePerHour": 35.00,
-  "location": "Nairobi, Kenya",
-  "description": "Ultra-luxury flagship sedan with cutting-edge technology and premium comfort features",
-  "features": [
-    "Adaptive Air Suspension",
-    "Quattro All-Wheel Drive",
-    "Virtual Cockpit Plus",
-    "Bang & Olufsen Premium Sound",
-    "Massaging Seats",
-    "Ambient Lighting",
-    "Wireless Phone Charging",
-    "Head-Up Display",
-    "Lane Keep Assist",
-    "Adaptive Cruise Control",
-    "360-Degree Camera",
-    "Heated and Ventilated Seats",
-    "Premium Leather Interior",
-    "Panoramic Sunroof",
-    "Dual-Zone Climate Control"
-  ]
-}
-
-### 54. Test Complex Search Query
-GET {{baseUrl}}/vehicles/search?location=Nairobi&category=LUXURY&transmission=AUTOMATIC&fuelType=HYBRID&minSeats=5&minPrice=100&maxPrice=300&search=Audi&page=1&limit=10&sortBy=pricePerDay&sortOrder=desc
-
-### 55. Test Availability Check for Specific Dates
-GET {{baseUrl}}/vehicles?startDate=2025-12-25&endDate=2025-12-30&location=Nairobi&category=LUXURY
-
-### 56. Test Vehicle Search with All Parameters
-GET {{baseUrl}}/vehicles?page=1&limit=5&location=Nairobi&category=SEDAN&startDate=2025-08-01&endDate=2025-08-05&minPrice=30&maxPrice=100&transmission=AUTOMATIC&fuelType=PETROL&minSeats=4&search=Toyota&sortBy=pricePerDay&sortOrder=asc
-
-### 57. Test Rate Limiting (Make multiple rapid requests)
-GET {{baseUrl}}/vehicles
-
-###
-GET {{baseUrl}}/vehicles
-
-###
-GET {{baseUrl}}/vehicles
-
-###
-GET {{baseUrl}}/vehicles
-
-###
-GET {{baseUrl}}/vehicles
-
-### 58. Test Vehicle Update with Partial Data
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "description": "Partially updated vehicle description"
-}
-
-### 59. Test Vehicle Update with Empty Body
-PATCH {{baseUrl}}/vehicles/670b5e8b4f5a2c3d4e5f6789
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{}
-
-### 60. Create Compact Vehicle
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Honda",
-  "model": "Civic",
-  "year": 2023,
-  "category": "COMPACT",
-  "transmission": "MANUAL",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Red",
-  "licensePlate": "KDC-101B",
-  "pricePerDay": 45.00,
-  "pricePerHour": 7.50,
-  "location": "Nakuru, Kenya",
-  "description": "Reliable compact car perfect for city driving",
-  "features": ["Air Conditioning", "Bluetooth", "USB Charging", "Backup Camera"]
-}
-
-### 61. Create Van
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Toyota",
-  "model": "Hiace",
-  "year": 2023,
-  "category": "VAN",
-  "transmission": "MANUAL",
-  "fuelType": "DIESEL",
-  "seats": 12,
-  "doors": 3,
-  "color": "White",
-  "licensePlate": "KDV-102V",
-  "pricePerDay": 95.00,
-  "pricePerHour": 15.00,
-  "location": "Eldoret, Kenya",
-  "description": "Spacious van ideal for group transportation",
-  "features": ["Air Conditioning", "High Ground Clearance", "Large Cargo Space", "Power Steering"]
-}
-
-### 62. Create Truck
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Isuzu",
-  "model": "D-Max",
-  "year": 2023,
-  "category": "TRUCK",
-  "transmission": "MANUAL",
-  "fuelType": "DIESEL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Black",
-  "licensePlate": "KDT-103T",
-  "pricePerDay": 110.00,
-  "pricePerHour": 18.00,
-  "location": "Meru, Kenya",
-  "description": "Rugged pickup truck perfect for off-road adventures",
-  "features": ["4WD", "Towing Capacity", "Off-Road Tires", "Hill Start Assist", "Load Bed Cover"]
-}
-
-### 63. Create CVT Transmission Vehicle
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Nissan",
-  "model": "Altima",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "CVT",
-  "fuelType": "PETROL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Gray",
-  "licensePlate": "KDC-104C",
-  "pricePerDay": 60.00,
-  "pricePerHour": 9.50,
-  "location": "Thika, Kenya",
-  "description": "Modern sedan with smooth CVT transmission",
-  "features": ["CVT Transmission", "Fuel Efficient", "Comfortable Interior", "Safety Features"]
-}
-
-### 64. Create Electric Vehicle
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Tesla",
-  "model": "Model 3",
-  "year": 2024,
-  "category": "LUXURY",
-  "transmission": "AUTOMATIC",
-  "fuelType": "ELECTRIC",
-  "seats": 5,
-  "doors": 4,
-  "color": "Blue",
-  "licensePlate": "KDE-105E",
-  "pricePerDay": 200.00,
-  "pricePerHour": 30.00,
-  "location": "Nairobi, Kenya",
-  "description": "Premium electric sedan with autopilot features",
-  "features": [
-    "Autopilot",
-    "Supercharging Network",
-    "Premium Interior",
-    "Over-the-Air Updates",
-    "Advanced Safety Features",
-    "Long Range Battery",
-    "Fast Charging",
-    "Mobile Connectivity"
-  ]
-}
-
-### 65. Create Diesel Vehicle
-POST {{baseUrl}}/vehicles
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "make": "Volkswagen",
-  "model": "Passat",
-  "year": 2023,
-  "category": "SEDAN",
-  "transmission": "AUTOMATIC",
-  "fuelType": "DIESEL",
-  "seats": 5,
-  "doors": 4,
-  "color": "Silver",
-  "licensePlate": "KDD-106D",
-  "pricePerDay": 70.00,
-  "pricePerHour": 11.00,
-  "location": "Kisii, Kenya",
-  "description": "Efficient diesel sedan with excellent fuel economy",
-  "features": ["Diesel Engine", "Fuel Efficient", "Comfortable Ride", "Advanced Safety", "Spacious Interior"]
-}
-
-### 66. Final Cleanup - Get All Vehicles to See Created Test Data
-GET {{baseUrl}}/vehicles?limit=50&sortBy=createdAt&sortOrder=desc
-
-### 67. Test Search by Different Categories
-GET {{baseUrl}}/vehicles?category=ECONOMY&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=COMPACT&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=SEDAN&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=SUV&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=LUXURY&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=VAN&limit=10
-
-###
-GET {{baseUrl}}/vehicles?category=TRUCK&limit=10
-
-### 68. Test Search by Different Transmission Types
-GET {{baseUrl}}/vehicles?transmission=MANUAL&limit=10
-
-###
-GET {{baseUrl}}/vehicles?transmission=AUTOMATIC&limit=10
-
-###
-GET {{baseUrl}}/vehicles?transmission=CVT&limit=10
-
-### 69. Test Search by Different Fuel Types
-GET {{baseUrl}}/vehicles?fuelType=PETROL&limit=10
-
-###
-GET {{baseUrl}}/vehicles?fuelType=DIESEL&limit=10
-
-###
-GET {{baseUrl}}/vehicles?fuelType=ELECTRIC&limit=10
-
-###
-GET {{baseUrl}}/vehicles?fuelType=HYBRID&limit=10
-
-### 70. Test Search by Location
-GET {{baseUrl}}/vehicles?location=Nairobi&limit=20
-
-###
-GET {{baseUrl}}/vehicles?location=Mombasa&limit=10
-
-###
-GET {{baseUrl}}/vehicles?location=Kisumu&limit=10
-
-### 71. Test Advanced Multi-Filter Search
-GET {{baseUrl}}/vehicles?category=LUXURY&transmission=AUTOMATIC&fuelType=ELECTRIC&location=Nairobi&minPrice=150&maxPrice=300
-
-### 72. Test Authentication Required Endpoints with All Users
-
-# Admin user should succeed
-GET {{baseUrl}}/vehicles/export?format=json
-Authorization: Bearer {{adminToken}}
-
-# Second user (customer) should fail
-GET {{baseUrl}}/vehicles/export?format=json
-Authorization: Bearer {{secondUserToken}}
-
-# Third user (customer) should fail
-GET {{baseUrl}}/vehicles/export?format=json
-Authorization: Bearer {{thirdUserToken}}
-
-### 73. Summary Statistics
-GET {{baseUrl}}/vehicles?limit=1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="make"
+
+Audi
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="model"
+
+A4
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="year"
+
+2024
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="category"
+
+SEDAN
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="transmission"
+
+AUTOMATIC
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="fuelType"
+
+PETROL
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="seats"
+
+5
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="doors"
+
+4
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="color"
+
+White
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="licensePlate"
+
+KAU-TEST-001
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="pricePerDay"
+
+95.00
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="location"
+
+Nairobi, Kenya
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="description"
+
+Premium sedan with advanced features
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="features"
+
+["Quattro AWD", "Virtual Cockpit", "MMI Navigation", "Bang & Olufsen Sound", "Adaptive Cruise Control"]
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="THUMBNAIL.png"
+Content-Type: image/png
+
+< ./public/assets/THUMBNAIL.png
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="images"; filename="THUMBNAIL (1).png"
+Content-Type: image/png
+
+< ./public/assets/THUMBNAIL (1).png
+------WebKitFormBoundary7MA4YWxkTrZu0gW--

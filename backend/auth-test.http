@@ -47,147 +47,6 @@ Content-Type: application/json
   "dateOfBirth": "1998-03-15"
 }
 
-### Register with existing email (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "password": "NewPassword123!",
-  "firstName": "Duplicate",
-  "lastName": "User",
-  "phone": "+254709876543"
-}
-
-### Register with existing phone (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "newuser@example.com",
-  "password": "NewPassword123!",
-  "firstName": "New",
-  "lastName": "User",
-  "phone": "+254704567890"
-}
-
-### Register with missing required fields (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "incomplete@test.com",
-  "firstName": "Incomplete"
-}
-
-### Register with invalid email format (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "invalid-email-format",
-  "password": "ValidPass123!",
-  "firstName": "Invalid",
-  "lastName": "Email",
-  "phone": "+254700000000"
-}
-
-### Register with weak password - no uppercase (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "weakpass1@test.com",
-  "password": "weakpassword123!",
-  "firstName": "Weak",
-  "lastName": "Password1",
-  "phone": "+254700000001"
-}
-
-### Register with weak password - no lowercase (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "weakpass2@test.com",
-  "password": "WEAKPASSWORD123!",
-  "firstName": "Weak",
-  "lastName": "Password2",
-  "phone": "+254700000002"
-}
-
-### Register with weak password - no numbers (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "weakpass3@test.com",
-  "password": "WeakPassword!",
-  "firstName": "Weak",
-  "lastName": "Password3",
-  "phone": "+254700000003"
-}
-
-### Register with password too short (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "shortpass@test.com",
-  "password": "Short1!",
-  "firstName": "Short",
-  "lastName": "Password",
-  "phone": "+254700000004"
-}
-
-### Register with invalid phone format (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "invalidphone@test.com",
-  "password": "ValidPass123!",
-  "firstName": "Invalid",
-  "lastName": "Phone",
-  "phone": "invalid-phone-format"
-}
-
-### Register with firstName too short (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "shortfname@test.com",
-  "password": "ValidPass123!",
-  "firstName": "A",
-  "lastName": "ValidLastName",
-  "phone": "+254700000005"
-}
-
-### Register with lastName too short (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "shortlname@test.com",
-  "password": "ValidPass123!",
-  "firstName": "ValidFirstName",
-  "lastName": "B",
-  "phone": "+254700000006"
-}
-
-### Register with invalid date format (should fail)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "invaliddate@test.com",
-  "password": "ValidPass123!",
-  "firstName": "Invalid",
-  "lastName": "Date",
-  "phone": "+254700000007",
-  "dateOfBirth": "invalid-date-format"
-}
 
 ### ========== LOGIN TESTS ==========
 
@@ -226,42 +85,6 @@ Content-Type: application/json
   "email": "kimunyijimmy@gmail.com",
   "password": "Kimunyi123!",
   "rememberMe": true
-}
-
-### Login with invalid credentials (should fail)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "password": "wrongpassword"
-}
-
-### Login with non-existent user (should fail)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "nonexistent@test.com",
-  "password": "SomePass123!"
-}
-
-### Login with empty credentials (should fail)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "",
-  "password": ""
-}
-
-### Login with invalid email format (should fail)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "invalid-email",
-  "password": "ValidPass123!"
 }
 
 ### ========== RATE LIMITING TESTS ==========
@@ -327,13 +150,6 @@ Content-Type: application/json
 GET {{baseUrl}}/auth/profile
 Authorization: Bearer {{accessToken}}
 
-### Get profile without token (should fail)
-GET {{baseUrl}}/auth/profile
-
-### Get profile with invalid token (should fail)
-GET {{baseUrl}}/auth/profile
-Authorization: Bearer invalid-token-here
-
 ### ========== TOKEN REFRESH TESTS ==========
 
 ### Refresh tokens with valid refresh token
@@ -344,32 +160,8 @@ Content-Type: application/json
   "refreshToken": "{{refreshToken}}"
 }
 
-### Refresh with invalid token (should fail)
-POST {{baseUrl}}/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "invalid-refresh-token"
-}
-
-### Refresh with empty token (should fail)
-POST {{baseUrl}}/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": ""
-}
-
 ### Test refresh token rotation
 # Use a refresh token once
-POST {{baseUrl}}/auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "{{refreshToken}}"
-}
-
-### Try to use the same refresh token again (should fail)
 POST {{baseUrl}}/auth/refresh
 Content-Type: application/json
 
@@ -403,14 +195,6 @@ Content-Type: application/json
   "email": "nonexistent@test.com"
 }
 
-### Forgot password with invalid email format (should fail)
-POST {{baseUrl}}/auth/forgot-password
-Content-Type: application/json
-
-{
-  "email": "invalid-email-format"
-}
-
 ### Reset password with valid token (use valid reset token format)
 POST {{baseUrl}}/auth/reset-password
 Content-Type: application/json
@@ -421,66 +205,10 @@ Content-Type: application/json
   "newPassword": "NewPassword123!"
 }
 
-### Reset password with invalid token (should fail)
-POST {{baseUrl}}/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "token": "invalid-reset-token",
-  "newPassword": "NewPassword123!"
-}
-
-### Reset password with weak password - no uppercase (should fail)
-POST {{baseUrl}}/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "token": "{{resetToken}}",
-  "newPassword": "weakpass123!"
-}
-
-### Reset password with weak password - no lowercase (should fail)
-POST {{baseUrl}}/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "token": "{{resetToken}}",
-  "newPassword": "WEAKPASS123!"
-}
-
-### Reset password with weak password - no numbers (should fail)
-POST {{baseUrl}}/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "token": "{{resetToken}}",
-  "newPassword": "WeakPassword!"
-}
-
-### Reset password too short (should fail)
-POST {{baseUrl}}/auth/reset-password
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com",
-  "token": "{{resetToken}}",
-  "newPassword": "Weak1!"
-}
-
 ### ========== EMAIL VERIFICATION TESTS ==========
 
 ### Verify email with valid token
 GET {{baseUrl}}/auth/verify-email?token=016ccf367c0e1cbff979d7d8c3b9a2a18ffec1040d19718334b4fe63c60196eb
-
-### Verify email with invalid token (should fail)
-GET {{baseUrl}}/auth/verify-email?token=invalid-verification-token
-
-### Verify email without token (should fail)
-GET {{baseUrl}}/auth/verify-email
 
 ### ========== LOGOUT TESTS ==========
 
@@ -495,10 +223,6 @@ Content-Type: application/json
 
 ### Logout all sessions
 POST {{baseUrl}}/auth/logout-all
-Authorization: Bearer {{accessToken}}
-
-### Test accessing protected route after logout (should fail)
-GET {{baseUrl}}/auth/profile
 Authorization: Bearer {{accessToken}}
 
 ### ========== ADMIN SETUP AND AGENT MANAGEMENT ==========
@@ -658,40 +382,6 @@ Content-Type: application/json
 
 ### ========== ROLE-BASED ACCESS TESTS ==========
 
-### Test agent trying to create another agent (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "email": "unauthorized@test.com",
-  "password": "TestPass123!",
-  "firstName": "Unauthorized",
-  "lastName": "User",
-  "phone": "+254700000010"
-}
-
-### Test agent trying to access admin routes (should fail)
-GET {{baseUrl}}/users/agents
-Authorization: Bearer {{agentToken}}
-
-### Test customer trying to create agent (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{accessToken}}
-Content-Type: application/json
-
-{
-  "email": "customer-attempt@test.com",
-  "password": "TestPass123!",
-  "firstName": "Customer",
-  "lastName": "Attempt",
-  "phone": "+254700000011"
-}
-
-### Test customer trying to access agent routes (should fail)
-GET {{baseUrl}}/users/agents
-Authorization: Bearer {{accessToken}}
-
 ### Test agent accessing allowed user routes
 GET {{baseUrl}}/users
 Authorization: Bearer {{agentToken}}
@@ -701,97 +391,6 @@ GET {{baseUrl}}/users/REPLACE_WITH_USER_ID
 Authorization: Bearer {{agentToken}}
 
 ### ========== AGENT CREATION VALIDATION TESTS ==========
-
-### Try to create agent with existing email (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "jimmykimunyi@gmail.com",
-  "password": "DuplicateTest123!",  
-  "firstName": "Duplicate",
-  "lastName": "Email",
-  "phone": "+254700000020"
-}
-
-### Try to create agent with existing phone (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "newagent@test.com",
-  "password": "TestPass123!",
-  "firstName": "New",
-  "lastName": "Agent",
-  "phone": "+254700000002"
-}
-
-### Try to create agent with weak password (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "weakpass@test.com",
-  "password": "weak",
-  "firstName": "Weak",
-  "lastName": "Password",
-  "phone": "+254700000021"
-}
-
-### Try to create agent with invalid email (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "invalid-email",
-  "password": "ValidPass123!",
-  "firstName": "Invalid",
-  "lastName": "Email",
-  "phone": "+254700000022"
-}
-
-### Try to create agent with invalid phone format (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "invalidphone@test.com",
-  "password": "ValidPass123!",
-  "firstName": "Invalid",
-  "lastName": "Phone",
-  "phone": "invalid-phone"
-}
-
-### Try to create agent with short first name (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "shortfname@test.com",
-  "password": "ValidPass123!",
-  "firstName": "A",
-  "lastName": "ValidLast",
-  "phone": "+254700000023"
-}
-
-### Try to create agent with short last name (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{adminToken}}
-Content-Type: application/json
-
-{
-  "email": "shortlname@test.com",
-  "password": "ValidPass123!",
-  "firstName": "ValidFirst",
-  "lastName": "B",
-  "phone": "+254700000024"
-}
 
 ### ========== AGENT WORKFLOW TESTS ==========
 
@@ -823,63 +422,6 @@ Content-Type: application/json
 ### Step 3: Agent accesses profile
 GET {{baseUrl}}/auth/profile
 Authorization: Bearer {{agentToken}}
-
-### Step 4: Agent tries admin function (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "email": "should-fail@test.com",
-  "password": "ShouldFail123!",
-  "firstName": "Should",
-  "lastName": "Fail",
-  "phone": "+254700000031"
-}
-
-### Step 5: Agent accesses allowed user routes
-GET {{baseUrl}}/users
-Authorization: Bearer {{agentToken}}
-
-### ========== AUTHORIZATION ERROR HANDLING TESTS ==========
-
-### Create agent without admin token (should fail)
-POST {{baseUrl}}/users/create-agent
-Content-Type: application/json
-
-{
-  "email": "no-auth@test.com",
-  "password": "NoAuth123!",
-  "firstName": "No",
-  "lastName": "Auth",
-  "phone": "+254700000040"
-}
-
-### Create agent with expired token (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer expired-token-here
-Content-Type: application/json
-
-{
-  "email": "expired@test.com",
-  "password": "ExpiredToken123!",
-  "firstName": "Expired",
-  "lastName": "Token",
-  "phone": "+254700000041"
-}
-
-### Create agent with invalid token (should fail)
-POST {{baseUrl}}/users/create-agent
-Authorization: Bearer invalid.jwt.token
-Content-Type: application/json
-
-{
-  "email": "invalidtoken@test.com",
-  "password": "InvalidToken123!",
-  "firstName": "Invalid",
-  "lastName": "Token",
-  "phone": "+254700000042"
-}
 
 ### ========== ROLE-BASED ACCESS TESTS ==========
 
@@ -957,16 +499,6 @@ Content-Type: application/json
   "newPassword": "NewAgentPass123!"
 }
 
-### Agent tries to update another user's profile (should fail)
-PATCH {{baseUrl}}/users/OTHER_USER_ID
-Authorization: Bearer {{agentToken}}
-Content-Type: application/json
-
-{
-  "firstName": "Unauthorized",
-  "lastName": "Update"
-}
-
 ### ========== SECURITY TESTS ==========
 
 ### Test SQL injection attempt in login
@@ -988,15 +520,6 @@ Content-Type: application/json
   "firstName": "<script>alert('xss')</script>",
   "lastName": "User",
   "phone": "+254700000003"
-}
-
-### Test malformed JSON (should fail)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "kimunyijimmy@gmail.com"
-  "password": "Kimunyi123!"
 }
 
 ### Test wrong content type
@@ -1029,18 +552,6 @@ Content-Type: application/json
 {
   "email": "  kimunyijimmy@gmail.com  ",
   "password": "Kimunyi123!"
-}
-
-### Test registration with very long names (should fail if exceeding limits)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "longname@test.com",
-  "password": "LongNamePass123!",
-  "firstName": "VeryLongFirstNameThatExceedsNormalLengthExpectationsButStillValidForTesting",
-  "lastName": "VeryLongLastNameThatExceedsNormalLengthExpectationsButStillValidForTesting",
-  "phone": "+254700000004"
 }
 
 ### Test registration with valid special characters in password

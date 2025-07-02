@@ -11,7 +11,8 @@ import {
   CancelBookingDto,
   BookingSearchOptions,
   BookingSearchResult,
-  BookingStatus
+  BookingStatus,
+  BookingStatusUpdateDto
 } from '../../core/models/booking.models';
 
 @Injectable({
@@ -23,53 +24,58 @@ export class BookingService {
   constructor(private http: HttpClient) { }
 
   // Create a new booking
-  createBooking(bookingData: CreateBookingDto): Observable<BookingResponse> {
-    return this.http.post<BookingResponse>(this.apiUrl, bookingData);
+  createBooking(bookingData: CreateBookingDto): Observable<{ success: boolean; message: string; data: BookingResponse }> {
+    return this.http.post<{ success: boolean; message: string; data: BookingResponse }>(this.apiUrl, bookingData);
   }
 
-  // Get all bookings with filters
-  getBookings(filters: BookingSearchOptions = {}): Observable<BookingSearchResult> {
+  // Get all bookings with filters (admin/agent only)
+  getBookings(filters: BookingSearchOptions = {}): Observable<{ success: boolean; message: string; data: BookingSearchResult }> {
     let params = new HttpParams();
     Object.keys(filters).forEach(key => {
       if (filters[key as keyof BookingSearchOptions] !== undefined && filters[key as keyof BookingSearchOptions] !== null) {
         params = params.set(key, filters[key as keyof BookingSearchOptions]!.toString());
       }
     });
-    return this.http.get<BookingSearchResult>(this.apiUrl, { params });
+    return this.http.get<{ success: boolean; message: string; data: BookingSearchResult }>(this.apiUrl, { params });
   }
 
-  // Get user's bookings
-  getMyBookings(filters: BookingSearchOptions = {}): Observable<BookingSearchResult> {
+  // Get user's own bookings
+  getMyBookings(filters: BookingSearchOptions = {}): Observable<{ success: boolean; message: string; data: BookingSearchResult }> {
     let params = new HttpParams();
     Object.keys(filters).forEach(key => {
       if (filters[key as keyof BookingSearchOptions] !== undefined && filters[key as keyof BookingSearchOptions] !== null) {
         params = params.set(key, filters[key as keyof BookingSearchOptions]!.toString());
       }
     });
-    return this.http.get<BookingSearchResult>(`${this.apiUrl}/my-bookings`, { params });
+    return this.http.get<{ success: boolean; message: string; data: BookingSearchResult }>(`${this.apiUrl}/my-bookings`, { params });
   }
 
   // Get booking by ID
-  getBookingById(bookingId: string): Observable<BookingResponse> {
-    return this.http.get<BookingResponse>(`${this.apiUrl}/${bookingId}`);
+  getBookingById(bookingId: string): Observable<{ success: boolean; message: string; data: BookingResponse }> {
+    return this.http.get<{ success: boolean; message: string; data: BookingResponse }>(`${this.apiUrl}/${bookingId}`);
   }
 
   // Update booking
-  updateBooking(bookingId: string, updateData: UpdateBookingDto): Observable<BookingResponse> {
-    return this.http.patch<BookingResponse>(`${this.apiUrl}/${bookingId}`, updateData);
+  updateBooking(bookingId: string, updateData: UpdateBookingDto): Observable<{ success: boolean; message: string; data: BookingResponse }> {
+    return this.http.patch<{ success: boolean; message: string; data: BookingResponse }>(`${this.apiUrl}/${bookingId}`, updateData);
+  }
+
+  // Update booking status (admin/agent only)
+  updateBookingStatus(bookingId: string, statusData: BookingStatusUpdateDto): Observable<{ success: boolean; message: string; data: BookingResponse }> {
+    return this.http.patch<{ success: boolean; message: string; data: BookingResponse }>(`${this.apiUrl}/${bookingId}/status`, statusData);
   }
 
   // Cancel booking
-  cancelBooking(bookingId: string, cancellationData: CancelBookingDto): Observable<BookingResponse> {
-    return this.http.post<BookingResponse>(`${this.apiUrl}/${bookingId}/cancel`, cancellationData);
+  cancelBooking(bookingId: string, cancellationData: CancelBookingDto): Observable<{ success: boolean; message: string; data: BookingResponse }> {
+    return this.http.post<{ success: boolean; message: string; data: BookingResponse }>(`${this.apiUrl}/${bookingId}/cancel`, cancellationData);
   }
 
   // Check vehicle availability
-  checkAvailability(vehicleId: string, startDate: string, endDate: string): Observable<AvailabilityResult> {
+  checkAvailability(vehicleId: string, startDate: string, endDate: string): Observable<{ success: boolean; message: string; data: AvailabilityResult }> {
     const params = new HttpParams()
       .set('startDate', startDate)
       .set('endDate', endDate);
-    return this.http.get<AvailabilityResult>(`${this.apiUrl}/check-availability/${vehicleId}`, { params });
+    return this.http.get<{ success: boolean; message: string; data: AvailabilityResult }>(`${this.apiUrl}/check-availability/${vehicleId}`, { params });
   }
 
   // Calculate booking price
@@ -83,7 +89,7 @@ export class BookingService {
       isHourlyBooking?: boolean;
       couponCode?: string;
     } = {}
-  ): Observable<PricingBreakdownDto> {
+  ): Observable<{ success: boolean; message: string; data: PricingBreakdownDto }> {
     let params = new HttpParams()
       .set('startDate', startDate)
       .set('endDate', endDate);
@@ -93,6 +99,21 @@ export class BookingService {
     if (options.isHourlyBooking) params = params.set('isHourlyBooking', options.isHourlyBooking.toString());
     if (options.couponCode) params = params.set('couponCode', options.couponCode);
 
-    return this.http.get<PricingBreakdownDto>(`${this.apiUrl}/calculate-price/${vehicleId}`, { params });
+    return this.http.get<{ success: boolean; message: string; data: PricingBreakdownDto }>(`${this.apiUrl}/calculate-price/${vehicleId}`, { params });
+  }
+
+  // Get booking statistics (admin/agent only)
+  getBookingStatistics(userId?: string): Observable<{ success: boolean; message: string; data: any }> {
+    let params = new HttpParams();
+    if (userId) params = params.set('userId', userId);
+    return this.http.get<{ success: boolean; message: string; data: any }>(`${this.apiUrl}/statistics`, { params });
+  }
+
+  // Bulk update booking status (admin/agent only)
+  bulkUpdateStatus(bookingIds: string[], status: BookingStatus): Observable<{ success: boolean; message: string; data: any }> {
+    return this.http.post<{ success: boolean; message: string; data: any }>(`${this.apiUrl}/bulk-update-status`, {
+      bookingIds,
+      status
+    });
   }
 }

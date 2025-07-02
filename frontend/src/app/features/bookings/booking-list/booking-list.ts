@@ -3,38 +3,37 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { BookingService } from '../booking.service';
-import { BookingResponse, BookingStatus, BookingSearchOptions } from '../../../core/models/booking.models';
+import { BookingResponse, BookingStatus } from '../../../core/models/booking.models';
+import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
 
 @Component({
   selector: 'app-booking-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, NavbarComponent],
   templateUrl: './booking-list.html',
-  styleUrl: './booking-list.scss'
+  styleUrls: ['./booking-list.scss']
 })
 export class BookingList implements OnInit {
   bookings: BookingResponse[] = [];
   isLoading = true;
   error: string | null = null;
+  totalPages = 0;
 
-  // Filters
-  filters: BookingSearchOptions = {
+  // Filter options
+  filters = {
     page: 1,
     limit: 10,
-    status: undefined,
+    status: undefined as BookingStatus | undefined,
     search: ''
   };
 
-  totalBookings = 0;
-  totalPages = 0;
+  bookingStatuses = ['PENDING', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED', 'REJECTED'];
 
-  // Modal states
+  // Cancel modal
   showCancelModal = false;
   selectedBooking: BookingResponse | null = null;
   cancellationReason = '';
   requestRefund = false;
-
-  bookingStatuses = Object.values(BookingStatus);
 
   constructor(private bookingService: BookingService) {}
 
@@ -45,16 +44,19 @@ export class BookingList implements OnInit {
   loadBookings() {
     this.isLoading = true;
     this.error = null;
-    
+
     this.bookingService.getMyBookings(this.filters).subscribe({
       next: (response) => {
-        this.bookings = response.data;
-        this.totalBookings = response.meta.total;
-        this.totalPages = response.meta.totalPages;
+        if (response.success) {
+          this.bookings = response.data.data;
+          this.totalPages = response.data.totalPages;
+        } else {
+          this.error = response.message || 'Failed to load bookings';
+        }
         this.isLoading = false;
       },
       error: (error) => {
-        this.error = 'Failed to load bookings. Please try again.';
+        this.error = error.error?.message || 'Failed to load bookings';
         this.isLoading = false;
         console.error('Error loading bookings:', error);
       }
@@ -67,46 +69,10 @@ export class BookingList implements OnInit {
   }
 
   onPageChange(page: number) {
-    this.filters.page = page;
-    this.loadBookings();
-  }
-
-  openCancelModal(booking: BookingResponse) {
-    this.selectedBooking = booking;
-    this.showCancelModal = true;
-    this.cancellationReason = '';
-    this.requestRefund = false;
-  }
-
-  closeCancelModal() {
-    this.showCancelModal = false;
-    this.selectedBooking = null;
-    this.cancellationReason = '';
-    this.requestRefund = false;
-  }
-
-  cancelBooking() {
-    if (!this.selectedBooking || !this.cancellationReason.trim()) return;
-
-    const cancellationData = {
-      cancellationReason: this.cancellationReason,
-      requestRefund: this.requestRefund
-    };
-
-    this.bookingService.cancelBooking(this.selectedBooking.id, cancellationData).subscribe({
-      next: (updatedBooking) => {
-        // Update the booking in the list
-        const index = this.bookings.findIndex(b => b.id === this.selectedBooking!.id);
-        if (index > -1) {
-          this.bookings[index] = updatedBooking;
-        }
-        this.closeCancelModal();
-      },
-      error: (error) => {
-        console.error('Error cancelling booking:', error);
-        // Handle error (show toast, etc.)
-      }
-    });
+    if (page >= 1 && page <= this.totalPages) {
+      this.filters.page = page;
+      this.loadBookings();
+    }
   }
 
   getStatusColor(status: string): string {
@@ -130,5 +96,43 @@ export class BookingList implements OnInit {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  }
+
+  openCancelModal(booking: BookingResponse) {
+    this.selectedBooking = booking;
+    this.showCancelModal = true;
+    this.cancellationReason = '';
+    this.requestRefund = false;
+  }
+
+  closeCancelModal() {
+    this.showCancelModal = false;
+    this.selectedBooking = null;
+    this.cancellationReason = '';
+    this.requestRefund = false;
+  }
+
+  cancelBooking() {
+    if (!this.selectedBooking || !this.cancellationReason.trim()) return;
+
+    const cancelData = {
+      cancellationReason: this.cancellationReason,
+      requestRefund: this.requestRefund
+    };
+
+    this.bookingService.cancelBooking(this.selectedBooking.id, cancelData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.closeCancelModal();
+          this.loadBookings(); // Reload bookings
+        } else {
+          this.error = response.message || 'Failed to cancel booking';
+        }
+      },
+      error: (error) => {
+        this.error = error.error?.message || 'Failed to cancel booking';
+        console.error('Error cancelling booking:', error);
+      }
+    });
   }
 }

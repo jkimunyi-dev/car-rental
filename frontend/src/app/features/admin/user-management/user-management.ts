@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
 import { UserService } from '../../../core/services/user.service';
-import { AdminUser, BulkActionResult } from '../../../core/models/admin.models';
+import { AdminUser, CreateUserDto, UpdateUserDto, UserFilters } from '../../../core/models/user.models';
+import { UserAvatarComponent } from '../../../shared/components/user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, UserAvatarComponent],
   templateUrl: './user-management.html',
   styleUrls: ['./user-management.scss']
 })
@@ -34,16 +35,16 @@ export class UserManagement implements OnInit {
   selectedAvatar: File | null = null;
   avatarPreview: string | null = null;
   
-  // Filters
-  filters = {
+  // Filters - Fix the type to match UserFilters interface
+  filters: UserFilters = {
     search: '',
     role: '',
-    isActive: null as boolean | null,
-    isVerified: null as boolean | null,
+    isActive: null,
+    isVerified: null,
     page: 1,
     limit: 10,
     sortBy: 'createdAt',
-    sortOrder: 'desc' as 'asc' | 'desc'
+    sortOrder: 'desc'
   };
 
   totalUsers = 0;
@@ -86,8 +87,6 @@ export class UserManagement implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       phone: [''],
       role: ['CUSTOMER', Validators.required],
-      isActive: [true],
-      isVerified: [false],
       password: ['', [Validators.required, Validators.minLength(8)]],
       licenseNumber: [''],
       address: [''],
@@ -109,25 +108,17 @@ export class UserManagement implements OnInit {
     this.isLoading = true;
     this.userService.getUsers(this.filters).subscribe({
       next: (response) => {
-        // Fix: Handle different response structures
-        if (response.data && response.data.users) {
-          this.users = response.data.users;
-          this.totalUsers = response.data.pagination?.total || 0;
-          this.totalPages = response.data.pagination?.totalPages || Math.ceil(this.totalUsers / this.filters.limit);
-        } else if (Array.isArray(response.data)) {
-          this.users = response.data;
-          this.totalUsers = response.data.length;
-          this.totalPages = Math.ceil(this.totalUsers / this.filters.limit);
-        } else {
-          this.users = [];
-          this.totalUsers = 0;
-          this.totalPages = 0;
+        if (response.success && response.data) {
+          this.users = response.data.users || [];
+          const pagination = response.data.pagination;
+          this.totalUsers = pagination.total;
+          this.totalPages = pagination.totalPages;
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading users:', error);
-        this.showErrorMessage('Failed to load users');
+        this.showErrorMessage('Error loading users');
         this.isLoading = false;
       }
     });
@@ -145,10 +136,10 @@ export class UserManagement implements OnInit {
 
   onSort(column: string) {
     if (this.filters.sortBy === column) {
-      this.filters.sortOrder = this.filters.sortOrder === 'asc' ? 'desc' : 'asc';
+      this.filters.sortOrder = this.filters.sortOrder === 'desc' ? 'asc' : 'desc';
     } else {
       this.filters.sortBy = column;
-      this.filters.sortOrder = 'asc';
+      this.filters.sortOrder = 'desc';
     }
     this.loadUsers();
   }
@@ -157,22 +148,11 @@ export class UserManagement implements OnInit {
   onAvatarSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        this.showErrorMessage('Please select a valid image file');
-        return;
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        this.showErrorMessage('File size must be less than 5MB');
-        return;
-      }
-
       this.selectedAvatar = file;
+      // Create preview
       const reader = new FileReader();
-      reader.onload = () => {
-        this.avatarPreview = reader.result as string;
+      reader.onload = (e: any) => {
+        this.avatarPreview = e.target.result;
       };
       reader.readAsDataURL(file);
     }
@@ -181,10 +161,16 @@ export class UserManagement implements OnInit {
   removeAvatarPreview() {
     this.selectedAvatar = null;
     this.avatarPreview = null;
-    // Reset file input
     const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
+    }
+  }
+
+  triggerFileInput() {
+    const fileInput = document.getElementById('avatar-upload') as HTMLInputElement;
+    if (fileInput) {
+      fileInput.click();
     }
   }
 
@@ -192,9 +178,7 @@ export class UserManagement implements OnInit {
   openCreateModal() {
     this.showCreateModal = true;
     this.userForm.reset({
-      role: 'CUSTOMER',
-      isActive: true,
-      isVerified: false
+      role: 'CUSTOMER'
     });
     this.selectedAvatar = null;
     this.avatarPreview = null;
@@ -209,29 +193,24 @@ export class UserManagement implements OnInit {
 
   createUser() {
     if (this.userForm.valid) {
-      const userData = { ...this.userForm.value };
-      
-      // Add avatar if selected
-      if (this.selectedAvatar) {
-        userData.avatar = this.selectedAvatar;
-      }
+      const userData: CreateUserDto = {
+        ...this.userForm.value,
+        avatar: this.selectedAvatar
+      };
 
       this.userService.createUser(userData).subscribe({
         next: (response) => {
-          this.users.unshift(response.data);
-          this.totalUsers++;
           this.showSuccessMessage('User created successfully');
           this.closeCreateModal();
+          this.loadUsers();
         },
         error: (error) => {
           console.error('Error creating user:', error);
-          const errorMessage = error.error?.message || 'Failed to create user';
-          this.showErrorMessage(errorMessage);
+          this.showErrorMessage('Failed to create user');
         }
       });
     } else {
       this.markFormGroupTouched(this.userForm);
-      this.showErrorMessage('Please fill in all required fields correctly');
     }
   }
 
@@ -239,21 +218,28 @@ export class UserManagement implements OnInit {
     this.selectedUser = user;
     this.showEditModal = true;
     
+    // Patch form with user data
     this.userForm.patchValue({
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
       phone: user.phone || '',
       role: user.role,
-      isActive: user.isActive,
-      isVerified: user.isVerified,
-      licenseNumber: '',
+      licenseNumber: '', // These fields might not be available in AdminUser
       address: '',
       city: '',
       country: '',
       zipCode: '',
       dateOfBirth: ''
     });
+    
+    // Add controls for edit mode
+    if (!this.userForm.get('isActive')) {
+      this.userForm.addControl('isActive', this.fb.control(user.isActive));
+    }
+    if (!this.userForm.get('isVerified')) {
+      this.userForm.addControl('isVerified', this.fb.control(user.isVerified));
+    }
     
     // Remove password requirement for edit
     this.userForm.get('password')?.clearValidators();
@@ -270,6 +256,10 @@ export class UserManagement implements OnInit {
     this.selectedAvatar = null;
     this.avatarPreview = null;
     
+    // Remove the edit-only controls
+    this.userForm.removeControl('isActive');
+    this.userForm.removeControl('isVerified');
+    
     // Restore password requirement
     this.userForm.get('password')?.setValidators([Validators.required, Validators.minLength(8)]);
     this.userForm.get('password')?.updateValueAndValidity();
@@ -277,36 +267,32 @@ export class UserManagement implements OnInit {
 
   updateUser() {
     if (this.userForm.valid && this.selectedUser) {
-      const userData = { ...this.userForm.value };
+      const updateData: UpdateUserDto = { ...this.userForm.value };
       
-      // Remove password if not provided
-      if (!userData.password) {
-        delete userData.password;
+      // Fix: Handle password field properly - only include if not empty
+      if (!updateData.password || updateData.password.trim() === '') {
+        delete (updateData as any).password; // Type assertion to avoid TS error
       }
       
-      // Add avatar if selected
+      // Handle avatar file
       if (this.selectedAvatar) {
-        userData.newAvatar = this.selectedAvatar;
+        updateData.newAvatar = this.selectedAvatar;
       }
 
-      this.userService.updateUser(this.selectedUser.id, userData).subscribe({
+      this.userService.updateUser(this.selectedUser.id, updateData).subscribe({
         next: (response) => {
-          const index = this.users.findIndex(u => u.id === this.selectedUser!.id);
-          if (index > -1) {
-            this.users[index] = response.data;
-          }
           this.showSuccessMessage('User updated successfully');
           this.closeEditModal();
+          this.loadUsers();
         },
         error: (error) => {
           console.error('Error updating user:', error);
-          const errorMessage = error.error?.message || 'Failed to update user';
-          this.showErrorMessage(errorMessage);
+          this.showErrorMessage('Error updating user');
         }
       });
     } else {
       this.markFormGroupTouched(this.userForm);
-      this.showErrorMessage('Please fill in all required fields correctly');
+      this.showErrorMessage('Please fill in all required fields');
     }
   }
 
@@ -325,15 +311,13 @@ export class UserManagement implements OnInit {
 
     this.userService.deleteUser(this.selectedUser.id).subscribe({
       next: () => {
-        this.users = this.users.filter(u => u.id !== this.selectedUser!.id);
-        this.totalUsers--;
         this.showSuccessMessage('User deleted successfully');
         this.closeDeleteModal();
+        this.loadUsers();
       },
       error: (error) => {
         console.error('Error deleting user:', error);
-        const errorMessage = error.error?.message || 'Failed to delete user';
-        this.showErrorMessage(errorMessage);
+        this.showErrorMessage('Failed to delete user');
       }
     });
   }
@@ -352,13 +336,13 @@ export class UserManagement implements OnInit {
     if (this.selectedUsers.length === this.users.length) {
       this.selectedUsers = [];
     } else {
-      this.selectedUsers = this.users.map(u => u.id);
+      this.selectedUsers = this.users.map(user => user.id);
     }
   }
 
   openBulkActionModal() {
     if (this.selectedUsers.length === 0) {
-      this.showErrorMessage('Please select at least one user');
+      this.showErrorMessage('Please select users first');
       return;
     }
     this.showBulkActionModal = true;
@@ -374,7 +358,6 @@ export class UserManagement implements OnInit {
 
   executeBulkAction() {
     if (!this.selectedBulkAction || this.selectedUsers.length === 0) {
-      this.showErrorMessage('Please select an action and users');
       return;
     }
 
@@ -386,40 +369,14 @@ export class UserManagement implements OnInit {
 
     this.userService.bulkUserAction(action).subscribe({
       next: (response) => {
-        // Fix: Extract result from response.data
-        const result = response.data;
-        
-        // Handle successful actions
-        result.successful.forEach((id) => {
-          const index = this.users.findIndex(u => u.id === id);
-          if (index > -1) {
-            if (this.selectedBulkAction === 'delete') {
-              this.users.splice(index, 1);
-            } else if (this.selectedBulkAction === 'activate') {
-              this.users[index].isActive = true;
-            } else if (this.selectedBulkAction === 'deactivate') {
-              this.users[index].isActive = false;
-            } else if (this.selectedBulkAction === 'verify') {
-              this.users[index].isVerified = true;
-            } else if (this.selectedBulkAction === 'unverify') {
-              this.users[index].isVerified = false;
-            }
-          }
-        });
-
-        let message = `${result.successCount} users ${this.selectedBulkAction}d successfully`;
-        if (result.failureCount > 0) {
-          message += `, ${result.failureCount} failed`;
-        }
-        
-        this.showSuccessMessage(message);
-        this.selectedUsers = [];
+        this.showSuccessMessage(`Bulk action completed. ${response.data.successCount} users processed successfully.`);
         this.closeBulkActionModal();
+        this.selectedUsers = [];
+        this.loadUsers();
       },
       error: (error: any) => {
         console.error('Error executing bulk action:', error);
-        const errorMessage = error.error?.message || 'Failed to execute bulk action';
-        this.showErrorMessage(errorMessage);
+        this.showErrorMessage('Failed to execute bulk action');
       }
     });
   }
@@ -430,21 +387,14 @@ export class UserManagement implements OnInit {
     
     this.userService.updateUserRole(userId, role).subscribe({
       next: (response) => {
-        const index = this.users.findIndex(u => u.id === userId);
-        if (index > -1) {
-          this.users[index].role = response.data.role;
-        }
         this.showSuccessMessage('User role updated successfully');
+        this.loadUsers();
       },
       error: (error) => {
         console.error('Error updating user role:', error);
-        const errorMessage = error.error?.message || 'Failed to update user role';
-        this.showErrorMessage(errorMessage);
-        // Reset select to original value
-        const user = this.users.find(u => u.id === userId);
-        if (user) {
-          target.value = user.role;
-        }
+        this.showErrorMessage('Failed to update user role');
+        // Reset the select value
+        target.value = this.users.find(u => u.id === userId)?.role || '';
       }
     });
   }
@@ -452,16 +402,12 @@ export class UserManagement implements OnInit {
   updateUserStatus(userId: string, isActive: boolean) {
     this.userService.updateUserStatus(userId, isActive).subscribe({
       next: (response) => {
-        const index = this.users.findIndex(u => u.id === userId);
-        if (index > -1) {
-          this.users[index].isActive = response.data.isActive;
-        }
         this.showSuccessMessage(`User ${isActive ? 'activated' : 'deactivated'} successfully`);
+        this.loadUsers();
       },
       error: (error) => {
         console.error('Error updating user status:', error);
-        const errorMessage = error.error?.message || 'Failed to update user status';
-        this.showErrorMessage(errorMessage);
+        this.showErrorMessage('Failed to update user status');
       }
     });
   }
@@ -475,22 +421,22 @@ export class UserManagement implements OnInit {
   }
 
   showSuccessMessage(message: string) {
-    // Simple implementation - you can replace with a proper toast service
-    alert(`Success: ${message}`);
+    // Implement success message display
+    console.log('Success:', message);
   }
 
   showErrorMessage(message: string) {
-    // Simple implementation - you can replace with a proper toast service
-    alert(`Error: ${message}`);
+    // Implement error message display
+    console.error('Error:', message);
   }
 
   getRoleColor(role: string): string {
-    const colors: Record<string, string> = {
-      'ADMIN': 'bg-red-100 text-red-800',
-      'AGENT': 'bg-blue-100 text-blue-800',
-      'CUSTOMER': 'bg-green-100 text-green-800'
-    };
-    return colors[role] || 'bg-gray-100 text-gray-800';
+    switch (role) {
+      case 'ADMIN': return 'bg-red-100 text-red-800';
+      case 'AGENT': return 'bg-blue-100 text-blue-800';
+      case 'CUSTOMER': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   }
 
   getStatusColor(isActive: boolean): string {
@@ -519,37 +465,38 @@ export class UserManagement implements OnInit {
     });
   }
 
-  // Form validation helpers
+  // Add the validation helper methods
   isFieldInvalid(fieldName: string): boolean {
     const field = this.userForm.get(fieldName);
-    return !!(field && field.invalid && field.touched);
+    return !!(field && field.invalid && (field.dirty || field.touched));
   }
 
   getFieldError(fieldName: string): string {
     const field = this.userForm.get(fieldName);
-    if (field && field.errors && field.touched) {
-      if (field.errors['required']) {
-        return `${this.getFieldDisplayName(fieldName)} is required`;
-      }
-      if (field.errors['email']) {
-        return 'Please enter a valid email address';
-      }
-      if (field.errors['minlength']) {
-        const requiredLength = field.errors['minlength'].requiredLength;
-        return `${this.getFieldDisplayName(fieldName)} must be at least ${requiredLength} characters long`;
-      }
+    if (field && field.errors) {
+      const errors = field.errors;
+      if (errors['required']) return `${this.getFieldDisplayName(fieldName)} is required`;
+      if (errors['email']) return 'Please enter a valid email address';
+      if (errors['minlength']) return `${this.getFieldDisplayName(fieldName)} must be at least ${errors['minlength'].requiredLength} characters`;
+      if (errors['pattern']) return `${this.getFieldDisplayName(fieldName)} format is invalid`;
     }
     return '';
   }
 
   getFieldDisplayName(fieldName: string): string {
-    const displayNames: Record<string, string> = {
-      'firstName': 'First Name',
-      'lastName': 'Last Name',
-      'email': 'Email',
-      'password': 'Password',
-      'phone': 'Phone',
-      'role': 'Role'
+    const displayNames: { [key: string]: string } = {
+      firstName: 'First Name',
+      lastName: 'Last Name',
+      email: 'Email',
+      phone: 'Phone',
+      password: 'Password',
+      role: 'Role',
+      licenseNumber: 'License Number',
+      address: 'Address',
+      city: 'City',
+      country: 'Country',
+      zipCode: 'ZIP Code',
+      dateOfBirth: 'Date of Birth'
     };
     return displayNames[fieldName] || fieldName;
   }

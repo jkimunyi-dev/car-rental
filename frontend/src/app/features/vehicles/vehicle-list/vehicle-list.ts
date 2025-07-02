@@ -2,23 +2,27 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { VehicleService, Vehicle, VehicleSearchParams } from '../vehicle';
+import { VehicleService, Vehicle, VehicleSearchParams } from '../vehicle.service';
 import { WishlistService } from '../../../core/services/wishlist.service';
+import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
+import { Auth } from '../../../core/services/auth';
 
 @Component({
   selector: 'app-vehicle-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './vehicle-list.html',
   styleUrl: './vehicle-list.scss'
 })
 export class VehicleList implements OnInit {
+  Math = Math;
   vehicles = signal<Vehicle[]>([]);
   isLoading = signal<boolean>(true);
   error = signal<string>('');
   totalPages = signal<number>(0);
   currentPage = signal<number>(1);
   totalVehicles = signal<number>(0);
+  isAuthenticated = signal<boolean>(false);
 
   // Search filters
   searchParams: VehicleSearchParams = {
@@ -67,12 +71,16 @@ export class VehicleList implements OnInit {
   constructor(
     private vehicleService: VehicleService,
     private wishlistService: WishlistService,
+    private authService: Auth,
     private router: Router
   ) {}
 
   ngOnInit() {
+    this.isAuthenticated.set(this.authService.isUserAuthenticated());
     this.loadVehicles();
-    this.loadWishlistStatus();
+    if (this.isAuthenticated()) {
+      this.loadWishlistStatus();
+    }
   }
 
   loadVehicles() {
@@ -83,28 +91,34 @@ export class VehicleList implements OnInit {
       next: (response) => {
         if (response.success) {
           this.vehicles.set(response.data.data);
-          this.totalPages.set(response.data.meta.totalPages);
-          this.currentPage.set(response.data.meta.page);
-          this.totalVehicles.set(response.data.meta.total);
+          this.totalPages.set(response.data.totalPages);
+          this.currentPage.set(response.data.page);
+          this.totalVehicles.set(response.data.total);
         } else {
           this.error.set(response.message || 'Failed to load vehicles');
         }
         this.isLoading.set(false);
       },
       error: (err) => {
-        this.error.set(err.error?.message || 'Failed to load vehicles');
+        console.error('Error loading vehicles:', err);
+        this.error.set('Failed to load vehicles');
         this.isLoading.set(false);
       }
     });
   }
 
   loadWishlistStatus() {
+    if (!this.isAuthenticated()) return;
+    
     this.wishlistService.getWishlist().subscribe({
       next: (response) => {
         if (response.success) {
           const wishlistIds = new Set(response.data.items.map((item: any) => item.vehicleId));
           this.wishlistVehicles.set(wishlistIds);
         }
+      },
+      error: () => {
+        // Silently handle error for wishlist
       }
     });
   }
@@ -131,6 +145,11 @@ export class VehicleList implements OnInit {
   }
 
   toggleWishlist(vehicleId: string) {
+    if (!this.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
+
     const isInWishlist = this.wishlistVehicles().has(vehicleId);
     
     if (isInWishlist) {
@@ -161,19 +180,31 @@ export class VehicleList implements OnInit {
   }
 
   bookVehicle(vehicleId: string) {
+    if (!this.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+      return;
+    }
     this.router.navigate(['/bookings/create'], { 
       queryParams: { vehicleId } 
     });
   }
 
-  getImageUrl(images: string[]): string {
-    return images && images.length > 0 ? images[0] : '/assets/placeholder-car.jpg';
+  getImageUrl(images: any[]): string {
+    if (images && images.length > 0) {
+      // Handle both string arrays and object arrays
+      if (typeof images[0] === 'string') {
+        return images[0];
+      } else if (images[0].url) {
+        return images[0].url;
+      }
+    }
+    return '/assets/placeholder-car.jpg';
   }
 
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('en-KE', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'KES',
+      currency: 'USD',
       minimumFractionDigits: 0
     }).format(price);
   }
@@ -210,5 +241,30 @@ export class VehicleList implements OnInit {
 
   isInWishlist(vehicleId: string): boolean {
     return this.wishlistVehicles().has(vehicleId);
+  }
+
+  getPaginationPages(): number[] {
+    const current = this.currentPage();
+    const total = this.totalPages();
+    const pages: number[] = [];
+    
+    // Show first page
+    if (current > 3) pages.push(1);
+    
+    // Show ellipsis
+    if (current > 4) pages.push(-1);
+    
+    // Show pages around current
+    for (let i = Math.max(1, current - 2); i <= Math.min(total, current + 2); i++) {
+      pages.push(i);
+    }
+    
+    // Show ellipsis
+    if (current < total - 3) pages.push(-1);
+    
+    // Show last page
+    if (current < total - 2) pages.push(total);
+    
+    return pages;
   }
 }

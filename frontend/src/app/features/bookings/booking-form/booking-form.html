@@ -86,6 +86,30 @@
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
           </div>
 
+          <!-- Driver Age -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Driver Age</label>
+            <input 
+              type="number" 
+              formControlName="driverAge"
+              min="18"
+              max="100"
+              placeholder="Enter driver age"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+
+          <!-- Insurance Level -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Insurance Level</label>
+            <select 
+              formControlName="insuranceLevel"
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="BASIC">Basic Coverage</option>
+              <option value="COMPREHENSIVE">Comprehensive Coverage</option>
+              <option value="PREMIUM">Premium Coverage</option>
+            </select>
+          </div>
+
           <!-- Coupon Code -->
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Coupon Code</label>
@@ -96,13 +120,24 @@
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
           </div>
 
+          <!-- Special Requests -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Special Requests</label>
+            <textarea 
+              formControlName="specialRequests"
+              rows="3"
+              placeholder="Any special requests..."
+              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </textarea>
+          </div>
+
           <!-- Notes -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Special Notes</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Additional Notes</label>
             <textarea 
               formControlName="notes"
               rows="3"
-              placeholder="Any special requests or notes..."
+              placeholder="Any additional notes..."
               class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             </textarea>
           </div>
@@ -140,6 +175,11 @@
               <div class="flex justify-between">
                 <span class="text-gray-600">Taxes & Fees:</span>
                 <span class="font-medium">{{ formatCurrency(pricing.taxes + pricing.fees) }}</span>
+              </div>
+
+              <div *ngIf="pricing.insuranceFee" class="flex justify-between">
+                <span class="text-gray-600">Insurance:</span>
+                <span class="font-medium">{{ formatCurrency(pricing.insuranceFee) }}</span>
               </div>
 
               <div class="flex justify-between">

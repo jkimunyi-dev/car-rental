@@ -22,14 +22,32 @@ export const routes: Routes = [
     ]
   },
   {
-    path: 'profile',
+    path: 'bookings',
     canActivate: [AuthGuard],
-    loadComponent: () => import('./features/profile/profile').then(m => m.Profile)
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/bookings/booking-list/booking-list').then(m => m.BookingList)
+      },
+      {
+        path: 'create',
+        loadComponent: () => import('./features/bookings/booking-form/booking-form').then(m => m.BookingForm)
+      },
+      {
+        path: ':id',
+        loadComponent: () => import('./features/bookings/booking-detail/booking-detail').then(m => m.BookingDetail)
+      }
+    ]
   },
   {
     path: 'wishlist',
     canActivate: [AuthGuard],
     loadComponent: () => import('./features/wishlist/list/wishlist').then(m => m.Wishlist)
+  },
+  {
+    path: 'profile',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./features/profile/profile').then(m => m.Profile)
   },
   {
     path: 'admin',
@@ -58,10 +76,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/admin/vehicle-management/vehicle-management').then(m => m.VehicleManagement)
       }
     ]
-  },
-  {
-    path: 'bookings',
-    loadChildren: () => import('./features/bookings/bookings-module').then(m => m.BookingsModule)
   },
   {
     path: 'auth',

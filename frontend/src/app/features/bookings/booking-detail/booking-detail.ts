@@ -1,13 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { BookingService } from '../booking.service';
 import { BookingResponse } from '../../../core/models/booking.models';
+import { NavbarComponent } from '../../../shared/components/navbar/navbar.component';
 
 @Component({
   selector: 'app-booking-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule, NavbarComponent],
   templateUrl: './booking-detail.html',
   styleUrls: ['./booking-detail.scss']
 })
@@ -18,6 +19,7 @@ export class BookingDetail implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
+    private router: Router,
     private bookingService: BookingService
   ) {}
 
@@ -31,12 +33,16 @@ export class BookingDetail implements OnInit {
   loadBooking(id: string) {
     this.isLoading = true;
     this.bookingService.getBookingById(id).subscribe({
-      next: (booking) => {
-        this.booking = booking;
+      next: (response) => {
+        if (response.success) {
+          this.booking = response.data;
+        } else {
+          this.error = response.message || 'Failed to load booking details';
+        }
         this.isLoading = false;
       },
       error: (error) => {
-        this.error = 'Failed to load booking details';
+        this.error = error.error?.message || 'Failed to load booking details';
         this.isLoading = false;
         console.error('Error loading booking:', error);
       }

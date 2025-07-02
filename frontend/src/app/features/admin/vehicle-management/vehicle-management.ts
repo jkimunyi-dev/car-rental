@@ -1,9 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { AdminService } from '../../../core/services/admin.service';
-import { AdminVehicle, BulkActionResult } from '../../../core/models/admin.models';
-import { VehicleCategory, TransmissionType, FuelType, VehicleStatus } from '../../../core/models/vehicle.models';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+
+import { VehicleService } from '../../../core/services/vehicle.service';
+import { 
+  VehicleWithStats, 
+  VehicleSearchFilters, 
+  VehicleListResponse,
+  CreateVehicleDto,
+  UpdateVehicleDto,
+  VehicleCategory,
+  TransmissionType,
+  FuelType,
+  VehicleStatus
+} from '../../../core/models/vehicle.models';
+
+interface VehicleImage {
+  url: string;
+  publicId: string;
+  alt?: string;
+}
 
 @Component({
   selector: 'app-vehicle-management',
@@ -14,12 +31,13 @@ import { VehicleCategory, TransmissionType, FuelType, VehicleStatus } from '../.
 })
 export class VehicleManagement implements OnInit {
   Math = Math;
+  currentYear = new Date().getFullYear();
   
-  vehicles: AdminVehicle[] = [];
+  vehicles: VehicleWithStats[] = [];
   isLoading = true;
   selectedVehicles: string[] = [];
   
-  // Forms - Initialize with FormBuilder
+  // Forms
   vehicleForm!: FormGroup;
   searchForm!: FormGroup;
   editForm: any = {};
@@ -29,25 +47,29 @@ export class VehicleManagement implements OnInit {
   showEditModal = false;
   showDeleteModal = false;
   showBulkActionModal = false;
-  selectedVehicle: AdminVehicle | null = null;
+  showImageModal = false;
+  selectedVehicle: VehicleWithStats | null = null;
+  selectedImageUrl = '';
   
   // File handling
   selectedImages: File[] = [];
   imagePreviews: string[] = [];
+  maxImages = 10;
+  allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
   
   // Filters
-  filters = {
+  filters: VehicleSearchFilters & { status?: string } = {
     search: '',
     category: '',
     status: '',
     location: '',
-    minPrice: null as number | null,
-    maxPrice: null as number | null,
-    isActive: null as boolean | null,
+    minPrice: undefined,
+    maxPrice: undefined,
+    isActive: undefined,
     page: 1,
     limit: 10,
     sortBy: 'createdAt',
-    sortOrder: 'desc' as 'asc' | 'desc'
+    sortOrder: 'desc'
   };
 
   totalVehicles = 0;
@@ -70,7 +92,7 @@ export class VehicleManagement implements OnInit {
   selectedBulkAction = '';
 
   constructor(
-    private adminService: AdminService,
+    private vehicleService: VehicleService,
     private fb: FormBuilder
   ) {
     this.initializeForms();
@@ -82,22 +104,26 @@ export class VehicleManagement implements OnInit {
 
   initializeForms() {
     this.vehicleForm = this.fb.group({
-      make: ['', Validators.required],
-      model: ['', Validators.required],
-      year: [new Date().getFullYear(), Validators.required],
+      make: ['', [Validators.required, Validators.minLength(2)]],
+      model: ['', [Validators.required, Validators.minLength(1)]],
+      year: [this.currentYear, [
+        Validators.required, 
+        Validators.min(2000), 
+        Validators.max(this.currentYear + 1)
+      ]],
       category: ['', Validators.required],
       transmission: ['', Validators.required],
       fuelType: ['', Validators.required],
-      seats: [5, [Validators.required, Validators.min(1)]],
-      doors: [4, [Validators.required, Validators.min(2)]],
+      seats: [5, [Validators.required, Validators.min(1), Validators.max(12)]],
+      doors: [4, [Validators.required, Validators.min(2), Validators.max(6)]],
       color: ['', Validators.required],
-      licensePlate: ['', Validators.required],
+      licensePlate: ['', [Validators.required, Validators.minLength(3)]],
       vin: [''],
-      pricePerDay: [0, [Validators.required, Validators.min(0)]],
-      pricePerHour: [0, Validators.min(0)],
+      pricePerDay: [0, [Validators.required, Validators.min(0.01)]],
+      pricePerHour: [0, [Validators.min(0)]],
       location: ['', Validators.required],
       description: [''],
-      features: [[]]
+      features: ['']
     });
 
     this.searchForm = this.fb.group({
@@ -110,15 +136,39 @@ export class VehicleManagement implements OnInit {
 
   loadVehicles() {
     this.isLoading = true;
-    this.adminService.getVehicles(this.filters).subscribe({
-      next: (response) => {
-        this.vehicles = response.data.vehicles || response.data;
-        this.totalVehicles = response.data.pagination?.total || response.data.length;
-        this.totalPages = response.data.pagination?.totalPages || Math.ceil(this.totalVehicles / this.filters.limit);
+    
+    const searchFilters: any = { ...this.filters };
+
+    // Convert empty strings to undefined for enum fields
+    if (searchFilters.category === '') {
+      delete searchFilters.category;
+    }
+    
+    if (searchFilters.status === '') {
+      delete searchFilters.status;
+    }
+
+    // Remove undefined/null/empty values
+    Object.keys(searchFilters).forEach(key => {
+      const value = searchFilters[key];
+      if (value === undefined || value === null || value === '') {
+        delete searchFilters[key];
+      }
+    });
+
+    console.log('Sending filters:', searchFilters);
+
+    this.vehicleService.getVehicles(searchFilters).subscribe({
+      next: (response: VehicleListResponse) => {
+        this.vehicles = response.data || [];
+        this.totalVehicles = response.meta?.total || 0;
+        this.totalPages = response.meta?.totalPages || 0;
         this.isLoading = false;
+        console.log('Loaded vehicles:', this.vehicles);
       },
       error: (error) => {
         console.error('Error loading vehicles:', error);
+        this.showErrorMessage('Failed to load vehicles');
         this.isLoading = false;
       }
     });
@@ -144,17 +194,32 @@ export class VehicleManagement implements OnInit {
     this.loadVehicles();
   }
 
-  // File handling
+  // Image handling methods
   onImagesSelected(event: any) {
     const files = Array.from(event.target.files) as File[];
-    this.selectedImages = files;
     
-    // Generate previews
-    this.imagePreviews = [];
-    files.forEach(file => {
+    // Validate file types
+    const validFiles = files.filter(file => this.allowedImageTypes.includes(file.type));
+    const invalidFiles = files.filter(file => !this.allowedImageTypes.includes(file.type));
+    
+    if (invalidFiles.length > 0) {
+      this.showErrorMessage(`Invalid file types: ${invalidFiles.map(f => f.name).join(', ')}. Only JPEG, PNG, and WebP are allowed.`);
+    }
+    
+    // Check total image limit
+    if (this.selectedImages.length + validFiles.length > this.maxImages) {
+      this.showErrorMessage(`Maximum ${this.maxImages} images allowed`);
+      return;
+    }
+    
+    // Add valid files
+    this.selectedImages = [...this.selectedImages, ...validFiles];
+    
+    // Generate previews for new files
+    validFiles.forEach(file => {
       const reader = new FileReader();
-      reader.onload = () => {
-        this.imagePreviews.push(reader.result as string);
+      reader.onload = (e: any) => {
+        this.imagePreviews.push(e.target.result);
       };
       reader.readAsDataURL(file);
     });
@@ -165,15 +230,81 @@ export class VehicleManagement implements OnInit {
     this.imagePreviews.splice(index, 1);
   }
 
+  // Get primary image for vehicle display
+  getVehiclePrimaryImage(vehicle: VehicleWithStats): string {
+    if (vehicle.images && vehicle.images.length > 0) {
+      // Handle both string array and object array formats
+      const firstImage = vehicle.images[0];
+      if (typeof firstImage === 'string') {
+        return firstImage;
+      } else if (typeof firstImage === 'object' && firstImage && 'url' in firstImage) {
+        return (firstImage as any).url;
+      }
+    }
+    return '/assets/images/no-vehicle-image.png'; // Fallback image
+  }
+
+  // Get all image URLs for vehicle
+  getVehicleImages(vehicle: VehicleWithStats): string[] {
+    if (!vehicle.images || vehicle.images.length === 0) {
+      return [];
+    }
+    
+    return vehicle.images.map((image: any) => {
+      if (typeof image === 'string') {
+        return image;
+      } else if (typeof image === 'object' && image && 'url' in image) {
+        return image.url;
+      }
+      return '';
+    }).filter(url => url !== '');
+  }
+
+  // View vehicle images
+  viewVehicleImages(vehicle: VehicleWithStats) {
+    this.selectedVehicle = vehicle;
+    this.showImageModal = true;
+  }
+
+  closeImageModal() {
+    this.showImageModal = false;
+    this.selectedVehicle = null;
+    this.selectedImageUrl = '';
+  }
+
+  selectImage(imageUrl: string) {
+    this.selectedImageUrl = imageUrl;
+  }
+
+  // Remove image from existing vehicle
+  removeVehicleImage(vehicle: VehicleWithStats, imageUrl: string) {
+    if (confirm('Are you sure you want to remove this image?')) {
+      this.vehicleService.removeVehicleImage(vehicle.id, imageUrl).subscribe({
+        next: () => {
+          this.showSuccessMessage('Image removed successfully');
+          this.loadVehicles();
+        },
+        error: (error) => {
+          console.error('Error removing image:', error);
+          this.showErrorMessage('Failed to remove image');
+        }
+      });
+    }
+  }
+
   // CRUD Operations
   openCreateModal() {
     this.showCreateModal = true;
     this.vehicleForm.reset({
-      year: new Date().getFullYear(),
+      year: this.currentYear,
       seats: 5,
       doors: 4,
       pricePerDay: 0,
-      features: []
+      pricePerHour: 0,
+      category: '',
+      transmission: '',
+      fuelType: '',
+      features: ''
     });
     this.selectedImages = [];
     this.imagePreviews = [];
@@ -188,36 +319,40 @@ export class VehicleManagement implements OnInit {
 
   createVehicle() {
     if (this.vehicleForm.valid) {
-      const vehicleData = { ...this.vehicleForm.value };
-      if (this.selectedImages.length > 0) {
-        vehicleData.images = this.selectedImages;
+      const formValues = this.vehicleForm.value;
+      
+      // Process features
+      let features: string[] = [];
+      if (formValues.features && typeof formValues.features === 'string') {
+        features = formValues.features.split(',').map((f: string) => f.trim()).filter((f: string) => f.length > 0);
       }
 
-      this.adminService.createVehicle(vehicleData).subscribe({
-        next: (newVehicle) => {
-          this.vehicles.unshift(newVehicle);
+      const vehicleData: CreateVehicleDto = {
+        ...formValues,
+        features,
+        images: this.selectedImages // Add selected images
+      };
+
+      console.log('Creating vehicle with data:', vehicleData);
+
+      this.vehicleService.createVehicle(vehicleData).subscribe({
+        next: (response) => {
           this.showSuccessMessage('Vehicle created successfully');
           this.closeCreateModal();
+          this.loadVehicles();
         },
         error: (error) => {
           console.error('Error creating vehicle:', error);
-          this.showErrorMessage('Failed to create vehicle');
+          this.showErrorMessage('Failed to create vehicle: ' + (error.error?.message || error.message));
         }
       });
     } else {
       this.markFormGroupTouched(this.vehicleForm);
+      this.showErrorMessage('Please fill in all required fields');
     }
   }
 
-  saveVehicle() {
-    if (this.selectedVehicle) {
-      this.updateVehicle();
-    } else {
-      this.createVehicle();
-    }
-  }
-
-  openEditModal(vehicle: AdminVehicle) {
+  openEditModal(vehicle: VehicleWithStats) {
     this.selectedVehicle = vehicle;
     this.editForm = { ...vehicle };
     this.showEditModal = true;
@@ -238,7 +373,7 @@ export class VehicleManagement implements OnInit {
       pricePerHour: vehicle.pricePerHour,
       location: vehicle.location,
       description: vehicle.description,
-      features: vehicle.features || []
+      features: Array.isArray(vehicle.features) ? vehicle.features.join(', ') : ''
     });
     
     this.selectedImages = [];
@@ -255,29 +390,40 @@ export class VehicleManagement implements OnInit {
 
   updateVehicle() {
     if (this.vehicleForm.valid && this.selectedVehicle) {
-      const vehicleData = { ...this.vehicleForm.value };
-      if (this.selectedImages.length > 0) {
-        vehicleData.images = this.selectedImages;
+      const formValues = this.vehicleForm.value;
+      
+      // Process features
+      let features: string[] = [];
+      if (formValues.features && typeof formValues.features === 'string') {
+        features = formValues.features.split(',').map((f: string) => f.trim()).filter((f: string) => f.length > 0);
       }
 
-      this.adminService.updateVehicle(this.selectedVehicle.id, vehicleData).subscribe({
-        next: (updatedVehicle) => {
-          const index = this.vehicles.findIndex(v => v.id === updatedVehicle.id);
-          if (index > -1) {
-            this.vehicles[index] = updatedVehicle;
-          }
+      const vehicleData: UpdateVehicleDto = {
+        ...formValues,
+        features,
+        newImages: this.selectedImages // Add new images to upload
+      };
+
+      console.log('Updating vehicle with data:', vehicleData);
+
+      this.vehicleService.updateVehicle(this.selectedVehicle.id, vehicleData).subscribe({
+        next: (response) => {
           this.showSuccessMessage('Vehicle updated successfully');
           this.closeEditModal();
+          this.loadVehicles();
         },
         error: (error) => {
           console.error('Error updating vehicle:', error);
-          this.showErrorMessage('Failed to update vehicle');
+          this.showErrorMessage('Failed to update vehicle: ' + (error.error?.message || error.message));
         }
       });
+    } else {
+      this.markFormGroupTouched(this.vehicleForm);
+      this.showErrorMessage('Please fill in all required fields');
     }
   }
 
-  openDeleteModal(vehicle: AdminVehicle) {
+  openDeleteModal(vehicle: VehicleWithStats) {
     this.selectedVehicle = vehicle;
     this.showDeleteModal = true;
   }
@@ -290,15 +436,15 @@ export class VehicleManagement implements OnInit {
   deleteVehicle() {
     if (!this.selectedVehicle) return;
 
-    this.adminService.deleteVehicle(this.selectedVehicle.id).subscribe({
+    this.vehicleService.deleteVehicle(this.selectedVehicle.id).subscribe({
       next: () => {
-        this.vehicles = this.vehicles.filter(v => v.id !== this.selectedVehicle!.id);
         this.showSuccessMessage('Vehicle deleted successfully');
         this.closeDeleteModal();
+        this.loadVehicles();
       },
       error: (error) => {
         console.error('Error deleting vehicle:', error);
-        this.showErrorMessage('Failed to delete vehicle');
+        this.showErrorMessage('Failed to delete vehicle: ' + (error.error?.message || error.message));
       }
     });
   }
@@ -322,55 +468,86 @@ export class VehicleManagement implements OnInit {
   }
 
   openBulkActionModal() {
+    if (this.selectedVehicles.length === 0) {
+      this.showErrorMessage('Please select at least one vehicle');
+      return;
+    }
     this.showBulkActionModal = true;
     this.selectedBulkAction = '';
   }
 
   closeBulkActionModal() {
     this.showBulkActionModal = false;
-    this.selectedBulkAction = '';
   }
 
   executeBulkAction() {
     if (!this.selectedBulkAction || this.selectedVehicles.length === 0) return;
 
-    const actionData = {
-      vehicleIds: this.selectedVehicles,
-      action: this.selectedBulkAction
-    };
+    if (this.selectedBulkAction === 'delete') {
+      this.executeBulkDelete();
+    } else {
+      this.executeBulkStatusUpdate();
+    }
+  }
 
-    this.adminService.bulkVehicleAction(actionData).subscribe({
-      next: (result: BulkActionResult) => {
-        result.successful.forEach((id) => {
-          const vehicleIndex = this.vehicles.findIndex(v => v.id === id);
-          if (vehicleIndex > -1) {
-            if (this.selectedBulkAction === 'delete') {
-              this.vehicles.splice(vehicleIndex, 1);
-            }
-          }
-        });
-        this.showSuccessMessage(`${result.successful.length} vehicles ${this.selectedBulkAction}d successfully`);
-        this.selectedVehicles = [];
-        this.closeBulkActionModal();
-      },
-      error: (error) => {
-        console.error('Error executing bulk action:', error);
-        this.showErrorMessage('Failed to execute bulk action');
-      }
+  private executeBulkDelete() {
+    const deletePromises = this.selectedVehicles.map(vehicleId => 
+      this.vehicleService.deleteVehicle(vehicleId).toPromise()
+    );
+
+    Promise.allSettled(deletePromises).then(results => {
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      this.showSuccessMessage(`Bulk delete completed: ${successful} successful, ${failed} failed`);
+      this.closeBulkActionModal();
+      this.selectedVehicles = [];
+      this.loadVehicles();
+    });
+  }
+
+  private executeBulkStatusUpdate() {
+    let status: VehicleStatus;
+    switch (this.selectedBulkAction) {
+      case 'activate':
+        status = VehicleStatus.AVAILABLE;
+        break;
+      case 'deactivate':
+        status = VehicleStatus.INACTIVE;
+        break;
+      case 'maintenance':
+        status = VehicleStatus.MAINTENANCE;
+        break;
+      case 'available':
+        status = VehicleStatus.AVAILABLE;
+        break;
+      default:
+        return;
+    }
+
+    const updatePromises = this.selectedVehicles.map(vehicleId => 
+      this.vehicleService.updateVehicleAvailability(vehicleId, status).toPromise()
+    );
+
+    Promise.allSettled(updatePromises).then(results => {
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+      
+      this.showSuccessMessage(`Bulk update completed: ${successful} successful, ${failed} failed`);
+      this.closeBulkActionModal();
+      this.selectedVehicles = [];
+      this.loadVehicles();
     });
   }
 
   updateVehicleStatus(vehicleId: string, event: Event) {
     const target = event.target as HTMLSelectElement;
-    const status = target.value;
-    
-    this.adminService.updateVehicleStatus(vehicleId, status).subscribe({
-      next: (updatedVehicle) => {
-        const index = this.vehicles.findIndex(v => v.id === vehicleId);
-        if (index > -1) {
-          this.vehicles[index] = updatedVehicle;
-        }
+    const status = target.value as VehicleStatus;
+
+    this.vehicleService.updateVehicleAvailability(vehicleId, status).subscribe({
+      next: () => {
         this.showSuccessMessage('Vehicle status updated successfully');
+        this.loadVehicles();
       },
       error: (error) => {
         console.error('Error updating vehicle status:', error);
@@ -379,48 +556,107 @@ export class VehicleManagement implements OnInit {
     });
   }
 
+  // Clear filters method
+  clearFilters() {
+    this.filters = {
+      search: '',
+      category: '' as any,
+      location: '',
+      minPrice: undefined,
+      maxPrice: undefined,
+      isActive: undefined,
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    };
+    (this.filters as any).status = '';
+    this.onFilterChange();
+  }
+
+  // Validation helper methods
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.vehicleForm.get(fieldName);
+    return !!(field && field.invalid && (field.dirty || field.touched));
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.vehicleForm.get(fieldName);
+    if (field && field.errors && (field.dirty || field.touched)) {
+      const errors = field.errors;
+      if (errors['required']) return `${this.getFieldDisplayName(fieldName)} is required`;
+      if (errors['minlength']) return `${this.getFieldDisplayName(fieldName)} must be at least ${errors['minlength'].requiredLength} characters`;
+      if (errors['min']) return `${this.getFieldDisplayName(fieldName)} must be at least ${errors['min'].min}`;
+      if (errors['max']) return `${this.getFieldDisplayName(fieldName)} must be at most ${errors['max'].max}`;
+    }
+    return '';
+  }
+
+  getFieldDisplayName(fieldName: string): string {
+    const displayNames: { [key: string]: string } = {
+      make: 'Make',
+      model: 'Model',
+      year: 'Year',
+      category: 'Category',
+      transmission: 'Transmission',
+      fuelType: 'Fuel Type',
+      seats: 'Seats',
+      doors: 'Doors',
+      color: 'Color',
+      licensePlate: 'License Plate',
+      vin: 'VIN',
+      pricePerDay: 'Price Per Day',
+      pricePerHour: 'Price Per Hour',
+      location: 'Location',
+      description: 'Description'
+    };
+    return displayNames[fieldName] || fieldName;
+  }
+
   // Utility methods
   markFormGroupTouched(formGroup: FormGroup) {
-    Object.keys(formGroup.controls).forEach(key => {
-      const control = formGroup.get(key);
-      control?.markAsTouched();
+    Object.keys(formGroup.controls).forEach(field => {
+      const control = formGroup.get(field);
+      control?.markAsTouched({ onlySelf: true });
     });
   }
 
   showSuccessMessage(message: string) {
     console.log('Success:', message);
+    alert(message);
   }
 
   showErrorMessage(message: string) {
     console.error('Error:', message);
+    alert(message);
   }
 
   getStatusColor(status: string): string {
-    const colors: Record<string, string> = {
-      'AVAILABLE': 'bg-green-100 text-green-800',
-      'RENTED': 'bg-blue-100 text-blue-800',
-      'MAINTENANCE': 'bg-yellow-100 text-yellow-800',
-      'INACTIVE': 'bg-red-100 text-red-800'
+    const colors: { [key: string]: string } = {
+      'AVAILABLE': 'text-green-600',
+      'RENTED': 'text-blue-600',
+      'MAINTENANCE': 'text-yellow-600',
+      'INACTIVE': 'text-red-600'
     };
-    return colors[status] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'text-gray-600';
   }
 
   getCategoryColor(category: string): string {
-    const colors: Record<string, string> = {
-      'ECONOMY': 'bg-blue-100 text-blue-800',
-      'COMPACT': 'bg-green-100 text-green-800',
-      'SEDAN': 'bg-purple-100 text-purple-800',
-      'SUV': 'bg-orange-100 text-orange-800',
-      'LUXURY': 'bg-pink-100 text-pink-800',
-      'VAN': 'bg-indigo-100 text-indigo-800',
-      'TRUCK': 'bg-gray-100 text-gray-800'
+    const colors: { [key: string]: string } = {
+      'ECONOMY': 'text-blue-600',
+      'COMPACT': 'text-green-600',
+      'SEDAN': 'text-purple-600',
+      'SUV': 'text-orange-600',
+      'LUXURY': 'text-yellow-600',
+      'VAN': 'text-indigo-600',
+      'TRUCK': 'text-red-600'
     };
-    return colors[category] || 'bg-gray-100 text-gray-800';
+    return colors[category] || 'text-gray-600';
   }
 
   // Export functionality
   exportVehicles(format: 'csv' | 'json' = 'csv') {
-    this.adminService.exportVehicles(format).subscribe({
+    this.vehicleService.exportVehicles(format).subscribe({
       next: (blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');

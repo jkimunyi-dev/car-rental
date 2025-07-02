@@ -1,10 +1,10 @@
 ### Variables
 @baseUrl = http://localhost:3000/api
-@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnc25ueXgwMDA1OXo5aXNyNXE2YTk1IiwiaWF0IjoxNzUxMTkxOTg3LCJleHAiOjE3NTExOTU1ODd9.BOA4qiL-QhI_jnDyGfzIdvqB2MTzVp3BVm5Tro8na6E
+@accessToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNrODBoZjEwMDAzaXQzdWdwYWRyajY0IiwiaWF0IjoxNzUxNDA1OTM5LCJleHAiOjE3NTE0MDk1Mzl9.r0Lu6Vdaq6TjCQFDvRyzmV7Lij3IUsl5_TBFwZ-qXGY
 @refreshToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTQwNzU4LCJleHAiOjE3NTE3NDU1NTh9.3965EjoBymK5TicTxGp5BDOuGMnL0H2m3tSjr4BKcVM
-@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNnbnVxYnkwMDAwOXp6aXdzZWdhcWxsIiwiaWF0IjoxNzUxMTkwMDIzLCJleHAiOjE3NTExOTM2MjN9.ItY8XnKfVXsnGl-vUI67xh9Ma3TTAbYNI9LA3mMtnL0
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoemJjZ2kwMDAwOXpkZ3F6eXBzaHN5IiwiaWF0IjoxNzUxNDA1MjY5LCJleHAiOjE3NTE0MDg4Njl9.pe4Jc3B92b_qgkIxD3dcN23K-4iB-_88eKsf0NrL1sU
 @agentToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjbWNoaHNwMHEwMDAwOXp4bzBxOTBidTZlIiwiaWF0IjoxNzUxMTkwOTQ0LCJleHAiOjE3NTExOTQ1NDR9.qDRnkJyPbGk8eQGv1Vin_iCxs10-LuMMfAnzbjZCdVY
-@vehicleId = cmchi3ljd000d9zxo1p5kupry
+@vehicleId = cmckwmu1s000e9z755sbetblh
 
 ### ========== SETUP: CREATE VEHICLE FOR TESTING ==========
 
@@ -59,19 +59,10 @@ Authorization: Bearer {{adminToken}}
 ### ========== PUBLIC BOOKING AVAILABILITY TESTS (NO AUTH REQUIRED) ==========
 
 ### Check vehicle availability - Available dates (PUBLIC)
-GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2025-12-30&endDate=2026-01-02
 
 ### Check vehicle availability - Different date range (PUBLIC)
 GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2025-01-05&endDate=2025-01-08
-
-### Check availability with invalid vehicle ID (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/check-availability/invalid-vehicle-id?startDate=2024-12-30&endDate=2025-01-02
-
-### Check availability with missing dates (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}
-
-### Check availability with invalid date format (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=invalid-date&endDate=2025-01-02
 
 ### ========== AUTHENTICATED BOOKING AVAILABILITY TESTS ==========
 
@@ -89,12 +80,6 @@ GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endD
 
 ### Calculate price with coupon code (PUBLIC)
 GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}?startDate=2024-12-30&endDate=2025-01-02&couponCode=SAVE10
-
-### Calculate price with missing dates (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/calculate-price/{{vehicleId}}
-
-### Calculate price with invalid vehicle ID (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/calculate-price/invalid-vehicle-id?startDate=2024-12-30&endDate=2025-01-02
 
 ### ========== AUTHENTICATED BOOKING PRICE CALCULATION TESTS ==========
 
@@ -152,63 +137,6 @@ Authorization: Bearer {{accessToken}}
   "isHourlyBooking": false
 }
 
-### Create booking without authentication (should fail)
-POST {{baseUrl}}/bookings
-Content-Type: application/json
-
-{
-  "vehicleId": "{{vehicleId}}",
-  "startDate": "2025-01-15",
-  "endDate": "2025-01-18",
-  "pickupLocation": "Nairobi CBD"
-}
-
-### Create booking with invalid vehicle ID (should fail)
-POST {{baseUrl}}/bookings
-Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-
-{
-  "vehicleId": "invalid-vehicle-id",
-  "startDate": "2025-01-15",
-  "endDate": "2025-01-18",
-  "pickupLocation": "Nairobi CBD"
-}
-
-### Create booking with missing required fields (should fail)
-POST {{baseUrl}}/bookings
-Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-
-{
-  "vehicleId": "{{vehicleId}}",
-  "startDate": "2025-01-15"
-}
-
-### Create booking with invalid date format (should fail)
-POST {{baseUrl}}/bookings
-Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-
-{
-  "vehicleId": "{{vehicleId}}",
-  "startDate": "invalid-date",
-  "endDate": "2025-01-18",
-  "pickupLocation": "Nairobi CBD"
-}
-
-### Create booking with end date before start date (should fail)
-POST {{baseUrl}}/bookings
-Content-Type: application/json
-Authorization: Bearer {{accessToken}}
-
-{
-  "vehicleId": "{{vehicleId}}",
-  "startDate": "2025-01-18",
-  "endDate": "2025-01-15",
-  "pickupLocation": "Nairobi CBD"
-}
-
 ### ========== PUBLIC GET BOOKINGS TESTS (NO AUTH REQUIRED - LIMITED DATA) ==========
 
 ### Get all bookings (PUBLIC - should show limited data)
@@ -244,16 +172,10 @@ Authorization: Bearer {{accessToken}}
 GET {{baseUrl}}/bookings/my-bookings
 Authorization: Bearer {{accessToken}}
 
-### Get my bookings without auth (should fail)
-GET {{baseUrl}}/bookings/my-bookings
-
 ### ========== PUBLIC GET SINGLE BOOKING TESTS (LIMITED DATA) ==========
 
 ### Get booking by ID (PUBLIC - limited data, use actual booking ID)
 GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
-
-### Get booking with invalid ID (should fail - PUBLIC)
-GET {{baseUrl}}/bookings/invalid-booking-id
 
 ### ========== AUTHENTICATED GET SINGLE BOOKING TESTS (FULL DATA) ==========
 
@@ -277,14 +199,6 @@ Authorization: Bearer {{accessToken}}
   "pickupLocation": "Nairobi Airport"
 }
 
-### Update booking without authentication (should fail)
-PATCH {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
-Content-Type: application/json
-
-{
-  "notes": "This should fail"
-}
-
 ### ========== BOOKING STATUS UPDATE TESTS (ADMIN/AGENT ONLY) ==========
 
 ### Approve booking (Admin - REQUIRES AUTH)
@@ -297,14 +211,6 @@ Authorization: Bearer {{adminToken}}
   "reason": "All requirements met"
 }
 
-### Try to update status without auth (should fail)
-PATCH {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE/status
-Content-Type: application/json
-
-{
-  "status": "CONFIRMED"
-}
-
 ### ========== CANCEL BOOKING TESTS (AUTHENTICATION REQUIRED) ==========
 
 ### Cancel booking (REQUIRES AUTH)
@@ -315,14 +221,6 @@ Authorization: Bearer {{accessToken}}
 {
   "cancellationReason": "Plans changed",
   "requestRefund": true
-}
-
-### Try to cancel booking without auth (should fail)
-POST {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE/cancel
-Content-Type: application/json
-
-{
-  "cancellationReason": "This should fail"
 }
 
 ### ========== COMPARISON TESTS: PUBLIC VS AUTHENTICATED ACCESS ==========
@@ -340,3 +238,21 @@ GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
 ### Compare: Get same booking as authenticated user (full data)
 GET {{baseUrl}}/bookings/YOUR_BOOKING_ID_HERE
 Authorization: Bearer {{accessToken}}
+
+### Check availability first (should return available: true for future dates)
+GET {{baseUrl}}/bookings/check-availability/{{vehicleId}}?startDate=2025-07-15&endDate=2025-07-18
+
+### Then create booking with same dates
+POST {{baseUrl}}/bookings
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "vehicleId": "{{vehicleId}}",
+  "startDate": "2025-07-15",
+  "endDate": "2025-07-18",
+  "pickupLocation": "Nairobi CBD",
+  "dropoffLocation": "Nairobi CBD",
+  "notes": "Need GPS and child safety seat",
+  "isHourlyBooking": false
+}

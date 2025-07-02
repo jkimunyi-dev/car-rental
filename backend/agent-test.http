@@ -1,0 +1,64 @@
+### Variables
+@baseUrl = http://localhost:3000/api
+@agentToken = YOUR_AGENT_TOKEN_HERE
+@adminToken = YOUR_ADMIN_TOKEN_HERE
+
+### ========== AGENT DASHBOARD TESTS ==========
+
+### Get agent dashboard statistics
+GET {{baseUrl}}/agent/dashboard/stats
+Authorization: Bearer {{agentToken}}
+
+### Get pending bookings for review
+GET {{baseUrl}}/agent/bookings/pending?page=1&limit=10
+Authorization: Bearer {{agentToken}}
+
+### Get specific booking for detailed review
+GET {{baseUrl}}/agent/bookings/BOOKING_ID_HERE/review
+Authorization: Bearer {{agentToken}}
+
+### ========== BOOKING APPROVAL TESTS ==========
+
+### Approve a booking
+POST {{baseUrl}}/agent/bookings/BOOKING_ID_HERE/approve
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "reason": "All documentation verified successfully",
+  "notes": "Customer provided valid license and payment method"
+}
+
+### Reject a booking
+POST {{baseUrl}}/agent/bookings/BOOKING_ID_HERE/reject
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "reason": "Invalid license number provided",
+  "notes": "Customer needs to provide updated documentation"
+}
+
+### Bulk approve bookings
+POST {{baseUrl}}/agent/bookings/bulk-process
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "bookingIds": ["booking1", "booking2", "booking3"],
+  "action": "approve",
+  "reason": "Batch approval for verified customers",
+  "notes": "All customers have valid documentation"
+}
+
+### Bulk reject bookings
+POST {{baseUrl}}/agent/bookings/bulk-process
+Content-Type: application/json
+Authorization: Bearer {{agentToken}}
+
+{
+  "bookingIds": ["booking4", "booking5"],
+  "action": "reject",
+  "reason": "Documentation incomplete",
+  "notes": "Customers need to resubmit with complete information"
+}

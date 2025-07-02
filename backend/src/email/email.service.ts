@@ -36,6 +36,22 @@ export class EmailService implements IEmailService {
     private readonly configService: ConfigService,
   ) {}
 
+  // Add the missing sendEmail method
+  async sendEmail(to: string, subject: string, htmlContent: string): Promise<void> {
+    try {
+      await this.mailerService.sendMail({
+        to,
+        subject,
+        html: htmlContent,
+      });
+
+      this.logger.log(`Email sent successfully to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+      throw error;
+    }
+  }
+
   // Direct email sending method (for immediate sending)
   async sendEmailDirect(emailData: EmailJobData): Promise<void> {
     try {
@@ -274,5 +290,74 @@ export class EmailService implements IEmailService {
       chunks.push(array.slice(i, i + chunkSize));
     }
     return chunks;
+  }
+
+  async sendBookingApproval(data: {
+    user: any;
+    booking: any;
+    reason?: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const { user, booking, reason, dashboardUrl } = data;
+    
+    const emailTemplate = `
+      <h2>Booking Approved! 🎉</h2>
+      <p>Dear ${user.firstName},</p>
+      <p>Great news! Your booking has been approved by our team.</p>
+      
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>Booking Details:</h3>
+        <p><strong>Booking Reference:</strong> ${booking.bookingReference}</p>
+        <p><strong>Vehicle:</strong> ${booking.vehicle?.make} ${booking.vehicle?.model}</p>
+        <p><strong>Dates:</strong> ${new Date(booking.startDate).toLocaleDateString()} - ${new Date(booking.endDate).toLocaleDateString()}</p>
+        <p><strong>Total Amount:</strong> $${booking.totalAmount}</p>
+        ${reason ? `<p><strong>Agent Notes:</strong> ${reason}</p>` : ''}
+      </div>
+      
+      <p>You can view your booking details and make any necessary preparations by visiting your dashboard.</p>
+      <a href="${dashboardUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Booking</a>
+      
+      <p>Thank you for choosing our service!</p>
+    `;
+
+    await this.sendEmail(
+      user.email,
+      'Booking Approved - Ready for Pickup',
+      emailTemplate
+    );
+  }
+
+  async sendBookingRejection(data: {
+    user: any;
+    booking: any;
+    reason?: string;
+    dashboardUrl: string;
+  }): Promise<void> {
+    const { user, booking, reason, dashboardUrl } = data;
+    
+    const emailTemplate = `
+      <h2>Booking Update Required</h2>
+      <p>Dear ${user.firstName},</p>
+      <p>We need to inform you that your booking request requires some updates.</p>
+      
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>Booking Details:</h3>
+        <p><strong>Booking Reference:</strong> ${booking.bookingReference}</p>
+        <p><strong>Vehicle:</strong> ${booking.vehicle?.make} ${booking.vehicle?.model}</p>
+        <p><strong>Dates:</strong> ${new Date(booking.startDate).toLocaleDateString()} - ${new Date(booking.endDate).toLocaleDateString()}</p>
+        ${reason ? `<p><strong>Reason:</strong> ${reason}</p>` : ''}
+      </div>
+      
+      <p>Please contact our support team or make a new booking with the correct information.</p>
+      <a href="${dashboardUrl}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">View Details</a>
+      
+      <p>We apologize for any inconvenience and look forward to serving you.</p>
+    `;
+
+    await this.sendEmail(
+      user.email,
+      'Booking Update Required',
+      emailTemplate
+    );
   }
 }

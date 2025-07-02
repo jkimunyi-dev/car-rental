@@ -171,6 +171,7 @@ export class AdminService implements IAdminService {
           zipCode: true,
           createdAt: true,
           updatedAt: true,
+          licenseNumber: true, // Include licenseNumber in user selection
         },
       }),
       this.prisma.user.count({ where }),
@@ -216,6 +217,7 @@ export class AdminService implements IAdminService {
         zipCode: true,
         createdAt: true,
         updatedAt: true,
+        licenseNumber: true, // Include licenseNumber in user selection
       },
     });
 
@@ -247,6 +249,7 @@ export class AdminService implements IAdminService {
         zipCode: true,
         createdAt: true,
         updatedAt: true,
+        licenseNumber: true, // Include licenseNumber in user selection
       },
     });
 
@@ -374,6 +377,8 @@ export class AdminService implements IAdminService {
               address: true,
               city: true,
               country: true,
+              avatar: true,
+              licenseNumber: true,
             },
           },
           vehicle: {
@@ -386,6 +391,10 @@ export class AdminService implements IAdminService {
               images: true,
               category: true,
               location: true,
+              pricePerDay: true,    // Add missing field
+              pricePerHour: true,   // Add missing field
+              status: true,         // Add missing field
+              features: true,       // Add missing field
             },
           },
           payment: true,
@@ -428,6 +437,8 @@ export class AdminService implements IAdminService {
             address: true,
             city: true,
             country: true,
+            avatar: true,
+            licenseNumber: true,
           },
         },
         vehicle: {
@@ -440,6 +451,10 @@ export class AdminService implements IAdminService {
             images: true,
             category: true,
             location: true,
+            pricePerDay: true,    // Add missing field
+            pricePerHour: true,   // Add missing field
+            status: true,         // Add missing field
+            features: true,       // Add missing field
           },
         },
         payment: true,
@@ -485,6 +500,8 @@ export class AdminService implements IAdminService {
             address: true,
             city: true,
             country: true,
+            avatar: true,
+            licenseNumber: true,
           },
         },
         vehicle: {
@@ -497,6 +514,10 @@ export class AdminService implements IAdminService {
             images: true,
             category: true,
             location: true,
+            pricePerDay: true,    // Add missing field
+            pricePerHour: true,   // Add missing field
+            status: true,         // Add missing field
+            features: true,       // Add missing field
           },
         },
         payment: true,
@@ -1342,6 +1363,7 @@ export class AdminService implements IAdminService {
         zipCode: true,
         createdAt: true,
         updatedAt: true,
+        licenseNumber: true, // Include licenseNumber in user selection
       },
     });
 
@@ -1409,6 +1431,7 @@ export class AdminService implements IAdminService {
         zipCode: true,
         createdAt: true,
         updatedAt: true,
+        licenseNumber: true, // Include licenseNumber in user selection
       },
     });
 
@@ -1453,6 +1476,7 @@ export class AdminService implements IAdminService {
         zipCode: true,
         createdAt: true,
         updatedAt: true,
+        licenseNumber: true, // Include licenseNumber in user selection
       },
     });
 

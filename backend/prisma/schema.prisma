@@ -124,7 +124,7 @@ model Vehicle {
   description   String?
   location      String
   features      String[] // JSON array of features
-  // Updated images field for Cloudinary
+  // Updated images field for Cloudinary - Array of image objects
   images        Json[] // Array of {url: string, publicId: string, alt?: string}
   primaryImage  String? // Primary image URL for quick access
   primaryImagePublicId String? // Primary image public_id
@@ -151,6 +151,7 @@ model Booking {
   endTime       String?
   pickupLocation String
   dropoffLocation String?
+  phoneNumber   String        // Add this field
   totalDays     Int
   totalHours    Int?
   pricePerDay   Float
@@ -163,15 +164,26 @@ model Booking {
   status        BookingStatus @default(PENDING)
   notes         String?
   cancellationReason String?
-  // Added vehicle image snapshot for booking
-  vehicleImageUrl String? // Snapshot of vehicle image at booking time
-  vehicleImagePublicId String? // Public ID for the snapshot image
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  // Enhanced booking metadata
+  bookingReference String?     @unique // Unique booking reference for customers
+  specialRequests  String?     // Additional special requests
+  driverAge       Int?         // Driver age for insurance purposes
+  additionalDrivers Json?      // Array of additional driver details
+  insuranceLevel  String?      // BASIC, COMPREHENSIVE, PREMIUM
+  // Vehicle snapshot at booking time
+  vehicleSnapshot Json?        // Complete vehicle details at booking time
+  // Pricing breakdown
+  pricingBreakdown Json?       // Detailed pricing structure
+  // Booking metadata
+  bookingSource   String?      // web, mobile, agent
+  customerIp      String?      // Customer IP for audit
+  deviceInfo      String?      // Device information
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   // Relations
-  user          User          @relation(fields: [userId], references: [id])
-  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id])
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
   payment       Payment?
   coupon        Coupon?       @relation(fields: [couponId], references: [id])
   couponId      String?

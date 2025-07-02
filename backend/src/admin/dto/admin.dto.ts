@@ -191,7 +191,7 @@ export class GenerateReportDto {
   groupBy?: 'day' | 'week' | 'month' | 'year';
 }
 
-export class CreateUserDto {
+export class AdminCreateUserDto {
   @IsEmail()
   email: string;
 

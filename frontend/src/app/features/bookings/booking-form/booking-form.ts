@@ -34,9 +34,16 @@ export class BookingForm implements OnInit {
       endTime: [''],
       pickupLocation: ['', Validators.required],
       dropoffLocation: [''],
+      phoneNumber: ['', [
+        Validators.required,
+        Validators.pattern(/^(07\d{8}|01\d{10})$/)
+      ]],
       notes: [''],
       couponCode: [''],
-      isHourlyBooking: [false]
+      isHourlyBooking: [false],
+      specialRequests: [''],
+      insuranceLevel: ['BASIC'],
+      driverAge: [25, [Validators.min(18), Validators.max(100)]]
     });
   }
 
@@ -82,8 +89,12 @@ export class BookingForm implements OnInit {
       formValue.endDate,
       options
     ).subscribe({
-      next: (pricing) => {
-        this.pricing = pricing;
+      next: (response) => {
+        if (response.success) {
+          this.pricing = response.data;
+        } else {
+          console.error('Error calculating price:', response.message);
+        }
         this.isCalculatingPrice = false;
       },
       error: (error) => {
@@ -96,22 +107,46 @@ export class BookingForm implements OnInit {
   checkAvailability() {
     const formValue = this.bookingForm.value;
     
+    if (!formValue.startDate || !formValue.endDate) {
+      this.availability = null;
+      return;
+    }
+    
     this.bookingService.checkAvailability(
       this.vehicleId,
       formValue.startDate,
       formValue.endDate
     ).subscribe({
-      next: (availability) => {
-        this.availability = availability;
+      next: (response) => {
+        if (response.success) {
+          this.availability = response.data;
+          if (!this.availability.available) {
+            this.error = 'Vehicle is not available for the selected dates. Please choose different dates.';
+          } else {
+            this.error = null;
+          }
+        } else {
+          this.error = response.message || 'Error checking availability';
+        }
       },
       error: (error) => {
+        this.error = error.error?.message || 'Error checking availability';
         console.error('Error checking availability:', error);
       }
     });
   }
 
   onSubmit() {
-    if (!this.bookingForm.valid || !this.availability?.available) return;
+    if (!this.bookingForm.valid) {
+      this.markFormGroupTouched();
+      this.error = 'Please fill in all required fields correctly.';
+      return;
+    }
+
+    if (!this.availability?.available) {
+      this.error = 'Vehicle is not available for the selected dates. Please check availability first.';
+      return;
+    }
 
     this.isLoading = true;
     this.error = null;
@@ -122,16 +157,50 @@ export class BookingForm implements OnInit {
     };
 
     this.bookingService.createBooking(bookingData).subscribe({
-      next: (booking) => {
-        this.router.navigate(['/bookings', booking.id], {
-          queryParams: { success: 'true' }
-        });
+      next: (response) => {
+        if (response.success) {
+          this.router.navigate(['/bookings', response.data.id], {
+            queryParams: { success: 'true' }
+          });
+        } else {
+          this.error = response.message || 'Failed to create booking';
+          this.isLoading = false;
+        }
       },
       error: (error) => {
         this.error = error.error?.message || 'Failed to create booking. Please try again.';
         this.isLoading = false;
+        console.error('Booking creation error:', error);
       }
     });
+  }
+
+  private markFormGroupTouched() {
+    Object.keys(this.bookingForm.controls).forEach(key => {
+      const control = this.bookingForm.get(key);
+      control?.markAsTouched();
+    });
+  }
+
+  isFieldInvalid(fieldName: string): boolean {
+    const field = this.bookingForm.get(fieldName);
+    return !!(field && field.invalid && field.touched);
+  }
+
+  getFieldError(fieldName: string): string {
+    const field = this.bookingForm.get(fieldName);
+    if (field?.errors) {
+      if (field.errors['required']) return `${fieldName} is required`;
+      if (field.errors['pattern']) {
+        if (fieldName === 'phoneNumber') {
+          return 'Phone number must be in format 07xxxxxxxx or 01xxxxxxxxxx';
+        }
+        return `Invalid ${fieldName} format`;
+      }
+      if (field.errors['min']) return `${fieldName} must be at least ${field.errors['min'].min}`;
+      if (field.errors['max']) return `${fieldName} must be at most ${field.errors['max'].max}`;
+    }
+    return '';
   }
 
   formatCurrency(amount: number): string {

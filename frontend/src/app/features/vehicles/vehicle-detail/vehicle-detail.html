@@ -29,14 +29,14 @@
         <div>
           <div class="mb-4">
             <img 
-              [src]="vehicle()!.images[selectedImageIndex()] || '/assets/placeholder-car.jpg'"
+              [src]="getImageUrl(vehicle()!.images, selectedImageIndex())"
               [alt]="vehicle()!.make + ' ' + vehicle()!.model"
               class="w-full h-96 object-cover rounded-lg">
           </div>
-          <div class="flex space-x-2 overflow-x-auto">
+          <div class="flex space-x-2 overflow-x-auto" *ngIf="vehicle() && vehicle()!.images && vehicle()!.images.length > 1">
             <img 
               *ngFor="let image of vehicle()!.images; let i = index"
-              [src]="image"
+              [src]="getImageUrl(vehicle()!.images, i)"
               [alt]="'Image ' + (i + 1)"
               (click)="selectImage(i)"
               [class]="selectedImageIndex() === i ? 'border-2 border-blue-500' : 'border border-gray-200'"
@@ -59,6 +59,14 @@
             </span>
           </div>
 
+          <!-- Status Badge -->
+          <div class="mb-4">
+            <span [class]="vehicle()!.status === 'AVAILABLE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
+                  class="px-3 py-1 rounded-full text-sm font-medium">
+              {{ vehicle()!.status }}
+            </span>
+          </div>
+
           <!-- Specifications -->
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="flex items-center">
@@ -77,6 +85,14 @@
               <i class="ri-user-line mr-2 text-gray-600"></i>
               <span>{{ vehicle()!.seats }} seats</span>
             </div>
+            <div class="flex items-center">
+              <i class="ri-door-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.doors }} doors</span>
+            </div>
+            <div class="flex items-center">
+              <i class="ri-map-pin-line mr-2 text-gray-600"></i>
+              <span>{{ vehicle()!.location }}</span>
+            </div>
           </div>
 
           <!-- Description -->
@@ -86,7 +102,7 @@
           </div>
 
           <!-- Features -->
-          <div *ngIf="vehicle()!.features?.length" class="mb-6">
+          <div *ngIf="vehicle() && vehicle()!.features && vehicle()!.features.length > 0" class="mb-6">
             <h3 class="text-lg font-semibold mb-2">Features</h3>
             <div class="flex flex-wrap gap-2">
               <span 
@@ -100,8 +116,10 @@
           <!-- Book Button -->
           <button 
             (click)="bookVehicle()"
-            class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors">
-            Book This Vehicle
+            [disabled]="vehicle()!.status !== 'AVAILABLE'"
+            class="w-full py-3 rounded-lg transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+            [class]="vehicle()!.status === 'AVAILABLE' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-400 text-white cursor-not-allowed'">
+            {{ vehicle()!.status === 'AVAILABLE' ? 'Book This Vehicle' : 'Not Available' }}
           </button>
         </div>
       </div>

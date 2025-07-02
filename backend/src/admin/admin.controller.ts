@@ -32,7 +32,7 @@ import {
   UpdateDisputeDto,
   UpdateSystemSettingDto,
   GenerateReportDto,
-  CreateUserDto,
+  AdminCreateUserDto, // Update this import
   UpdateUserAvatarDto,
 } from './dto/admin.dto';
 
@@ -210,7 +210,7 @@ export class AdminController {
   @Post('users')
   @UseInterceptors(FileInterceptor('avatar'))
   async createUser(
-    @Body() createUserDto: CreateUserDto,
+    @Body() createUserDto: AdminCreateUserDto, // Update this parameter type
     @UploadedFile() avatar?: Express.Multer.File,
   ) {
     const user = await this.adminService.createUser(createUserDto, avatar);

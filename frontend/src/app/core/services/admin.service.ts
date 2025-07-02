@@ -165,9 +165,9 @@ export class AdminService {
     Object.keys(vehicleData).forEach(key => {
       const value = vehicleData[key];
       if (key === 'images' && Array.isArray(value)) {
-        // Handle image files for Cloudinary upload
-        value.forEach((file: unknown) => {
-          if (this.isFile(file)) {
+        // Handle image files
+        value.forEach((file: any) => {
+          if (file instanceof File) {
             formData.append('images', file);
           }
         });
@@ -178,7 +178,7 @@ export class AdminService {
         formData.append(key, value.toString());
       }
     });
-    
+
     return this.http.post<ApiResponse<AdminVehicle>>(`${this.apiUrl}/vehicles`, formData)
       .pipe(map(response => response.data));
   }

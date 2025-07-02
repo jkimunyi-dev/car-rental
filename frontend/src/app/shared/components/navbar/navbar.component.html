@@ -1,0 +1,172 @@
+<nav class="bg-gray-900 shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <!-- Logo -->
+      <div class="flex-shrink-0">
+        <a routerLink="/" class="text-2xl font-bold text-white hover:text-blue-400 transition-colors duration-300">
+          CarRental
+        </a>
+      </div>
+      
+      <!-- Mobile menu button -->
+      <div class="md:hidden">
+        <button #menuBtn class="text-white hover:text-blue-400 focus:outline-none focus:text-blue-400 transition-colors duration-300">
+          <i class="ri-menu-line text-2xl"></i>
+        </button>
+      </div>
+
+      <!-- Desktop Navigation Links -->
+      <ul #navLinks class="hidden md:flex items-center space-x-8">
+        <li>
+          <a routerLink="/vehicles" 
+             class="text-white hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 hover:bg-gray-800"
+             routerLinkActive="text-blue-400 bg-gray-800">
+            Vehicles
+          </a>
+        </li>
+        <li>
+          <a routerLink="/bookings" 
+             class="text-white hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 hover:bg-gray-800"
+             routerLinkActive="text-blue-400 bg-gray-800">
+            Booking
+          </a>
+        </li>
+        @if (isAuthenticated) {
+          <li>
+            <a routerLink="/wishlist" 
+               class="text-white hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 hover:bg-gray-800"
+               routerLinkActive="text-blue-400 bg-gray-800">
+              Wishlist
+            </a>
+          </li>
+        }
+        <li>
+          <a href="#contact" 
+             class="text-white hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 hover:bg-gray-800">
+            Contact
+          </a>
+        </li>
+        @if (!isAuthenticated) {
+          <li>
+            <button (click)="onSignUp()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-300">
+              Sign Up
+            </button>
+          </li>
+        }
+      </ul>
+
+      <!-- Authentication Buttons -->
+      <div class="hidden md:block">
+        @if (!isAuthenticated) {
+          <button (click)="onSignIn()" 
+                  class="bg-transparent border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white px-4 py-2 rounded-md text-sm font-medium transition-all duration-300">
+            Sign In
+          </button>
+        } @else {
+          <!-- Profile dropdown -->
+          <div class="relative">
+            <button 
+              (click)="toggleProfileDropdown()"
+              class="flex items-center space-x-2 bg-white bg-opacity-20 rounded-full px-3 py-2 hover:bg-opacity-30 transition-all duration-300 text-white">
+              <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
+                {{ userInitials }}
+              </div>
+              <span class="hidden md:inline text-sm font-medium">{{ currentUser?.firstName }}</span>
+              <i class="ri-arrow-down-s-line"></i>
+            </button>
+
+            @if (showProfileDropdown) {
+              <div class="absolute right-0 top-full mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div class="px-4 py-3 border-b border-gray-100">
+                  <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                      {{ userInitials }}
+                    </div>
+                    <div>
+                      <div class="text-sm font-semibold text-gray-900">{{ currentUser?.firstName }} {{ currentUser?.lastName }}</div>
+                      <div class="text-xs text-gray-500">{{ currentUser?.email }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="py-1">
+                  <button (click)="onProfileClick()" 
+                          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors duration-200">
+                    <i class="ri-user-line mr-3 text-gray-500"></i>
+                    Profile
+                  </button>
+                  <button routerLink="/bookings" 
+                          (click)="showProfileDropdown = false" 
+                          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors duration-200">
+                    <i class="ri-calendar-line mr-3 text-gray-500"></i>
+                    My Bookings
+                  </button>
+                  <button routerLink="/wishlist" 
+                          (click)="showProfileDropdown = false" 
+                          class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors duration-200">
+                    <i class="ri-heart-line mr-3 text-gray-500"></i>
+                    Wishlist
+                  </button>
+                </div>
+
+                @if (isAdmin()) {
+                  <div class="border-t border-gray-200 my-1"></div>
+                  <div class="py-1">
+                    <button (click)="onAdminDashboard()" 
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center transition-colors duration-200">
+                      <i class="ri-dashboard-line mr-3 text-gray-500"></i>
+                      Admin Dashboard
+                    </button>
+                  </div>
+                }
+
+                <div class="border-t border-gray-200 my-1"></div>
+                <div class="py-1">
+                  <button (click)="onLogout()" 
+                          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center transition-colors duration-200">
+                    <i class="ri-logout-box-line mr-3"></i>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="md:hidden">
+      <div #navLinks class="px-2 pt-2 pb-3 space-y-1 bg-gray-800 rounded-lg mt-2">
+        <a routerLink="/vehicles" 
+           class="block text-white hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+           routerLinkActive="text-blue-400 bg-gray-700">
+          Vehicles
+        </a>
+        <a routerLink="/bookings" 
+           class="block text-white hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+           routerLinkActive="text-blue-400 bg-gray-700">
+          Booking
+        </a>
+        @if (isAuthenticated) {
+          <a routerLink="/wishlist" 
+             class="block text-white hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300"
+             routerLinkActive="text-blue-400 bg-gray-700">
+            Wishlist
+          </a>
+        }
+        <a href="#contact" 
+           class="block text-white hover:text-blue-400 px-3 py-2 rounded-md text-base font-medium transition-colors duration-300">
+          Contact
+        </a>
+        @if (!isAuthenticated) {
+          <button (click)="onSignUp()" 
+                  class="w-full text-left bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-base font-medium transition-colors duration-300">
+            Sign Up
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+</nav>

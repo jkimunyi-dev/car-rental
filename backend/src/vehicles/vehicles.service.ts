@@ -12,6 +12,7 @@ import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { VehicleResponseDto } from './dto/vehicle-response.dto';
 import { AvailabilityUpdateDto } from './dto/availability-update.dto';
 import { BulkImportDto } from './dto/bulk-import.dto';
+import { ApiResponse, PaginatedResponse } from '../common/dto/api-response.dto';
 import { Role } from '@prisma/client';
 import * as csv from 'csv-parser';
 import { Readable } from 'stream';
@@ -31,47 +32,114 @@ export class VehiclesService {
   async create(
     createVehicleDto: CreateVehicleDto,
     images?: Express.Multer.File[],
-  ): Promise<VehicleResponseDto> {
-    // Check if license plate already exists
-    const existingVehicle = await this.prisma.vehicle.findUnique({
-      where: { licensePlate: createVehicleDto.licensePlate },
-    });
+  ): Promise<ApiResponse<VehicleResponseDto>> {
+    try {
+      // Check if license plate already exists
+      const existingVehicle = await this.prisma.vehicle.findUnique({
+        where: { licensePlate: createVehicleDto.licensePlate },
+      });
 
-    if (existingVehicle) {
-      throw new ConflictException(
-        'Vehicle with this license plate already exists',
-      );
+      if (existingVehicle) {
+        throw new ConflictException('Vehicle with this license plate already exists');
+      }
+
+      // Upload images to Cloudinary
+      let imageObjects: any[] = [];
+      if (images && images.length > 0) {
+        const uploadPromises = images.map(async (image) => {
+          const result = await this.uploadService.uploadImage(image, 'vehicles');
+          return {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: `${createVehicleDto.make} ${createVehicleDto.model}`
+          };
+        });
+        
+        imageObjects = await Promise.all(uploadPromises);
+      }
+
+      const vehicle = await this.prisma.vehicle.create({
+        data: {
+          ...createVehicleDto,
+          features: Array.isArray(createVehicleDto.features) 
+            ? createVehicleDto.features 
+            : createVehicleDto.features 
+            ? [createVehicleDto.features] 
+            : [],
+          images: imageObjects,
+          primaryImage: imageObjects.length > 0 ? imageObjects[0].url : null,
+          primaryImagePublicId: imageObjects.length > 0 ? imageObjects[0].publicId : null,
+        },
+      });
+
+      const formattedVehicle = this.formatVehicleResponse(vehicle);
+      return ApiResponse.success(formattedVehicle, 'Vehicle created successfully');
+    } catch (error) {
+      throw error;
     }
-
-    // Upload images to Cloudinary
-    let imageUrls: string[] = [];
-    if (images && images.length > 0) {
-      imageUrls = await this.uploadVehicleImages(images);
-    }
-
-    const vehicle = await this.prisma.vehicle.create({
-      data: {
-        ...createVehicleDto,
-        images: imageUrls,
-      },
-    });
-
-    return this.formatVehicleResponse(vehicle);
   }
 
-  async findAll(options: SearchOptions) {
-    const { page = 1, limit = 10, ...searchCriteria } = options;
-    const skip = (page - 1) * limit;
+  async findAll(options: SearchOptions): Promise<ApiResponse<PaginatedResponse<VehicleResponseDto>>> {
+    try {
+      const { page = 1, limit = 10, ...searchCriteria } = options;
+      const skip = (page - 1) * limit;
 
-    const where = this.buildSearchWhere(searchCriteria);
+      const where = this.buildSearchWhere(searchCriteria);
 
-    const [vehicles, total] = await Promise.all([
-      this.prisma.vehicle.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
+      const [vehicles, total] = await Promise.all([
+        this.prisma.vehicle.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            _count: {
+              select: {
+                bookings: true,
+                reviews: true,
+              },
+            },
+          },
+        }),
+        this.prisma.vehicle.count({ where }),
+      ]);
+
+      const formattedVehicles = vehicles.map(this.formatVehicleResponse);
+      const totalPages = Math.ceil(total / limit);
+
+      const paginatedResponse: PaginatedResponse<VehicleResponseDto> = {
+        data: formattedVehicles,
+        total,
+        page,
+        limit,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      };
+
+      return ApiResponse.success(paginatedResponse, 'Vehicles retrieved successfully');
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findOne(id: string): Promise<ApiResponse<VehicleResponseDto>> {
+    try {
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { id },
         include: {
+          reviews: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
           _count: {
             select: {
               bookings: true,
@@ -79,51 +147,17 @@ export class VehiclesService {
             },
           },
         },
-      }),
-      this.prisma.vehicle.count({ where }),
-    ]);
+      });
 
-    return {
-      data: vehicles.map(this.formatVehicleResponse),
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
-  }
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
 
-  async findOne(id: string): Promise<VehicleResponseDto> {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id },
-      include: {
-        reviews: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-        _count: {
-          select: {
-            bookings: true,
-            reviews: true,
-          },
-        },
-      },
-    });
-
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
+      const formattedVehicle = this.formatVehicleResponse(vehicle);
+      return ApiResponse.success(formattedVehicle, 'Vehicle retrieved successfully');
+    } catch (error) {
+      throw error;
     }
-
-    return this.formatVehicleResponse(vehicle);
   }
 
   async update(
@@ -131,262 +165,321 @@ export class VehiclesService {
     updateVehicleDto: UpdateVehicleDto,
     images?: Express.Multer.File[],
     userRole?: Role,
-  ): Promise<VehicleResponseDto> {
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
+  ): Promise<ApiResponse<VehicleResponseDto>> {
+    try {
+      const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
 
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
-    }
-
-    // Check permissions - agents can only update certain fields
-    if (userRole === Role.AGENT) {
-      const allowedFields = ['status', 'location', 'description', 'mileage'];
-      const updateFields = Object.keys(updateVehicleDto);
-      const unauthorizedFields = updateFields.filter(
-        (field) => !allowedFields.includes(field),
-      );
-
-      if (unauthorizedFields.length > 0) {
-        throw new ForbiddenException(
-          `Agents cannot update fields: ${unauthorizedFields.join(', ')}`,
-        );
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
       }
-    }
 
-    // Check for license plate conflicts
-    if (updateVehicleDto.licensePlate) {
-      const existingVehicle = await this.prisma.vehicle.findFirst({
-        where: {
-          licensePlate: updateVehicleDto.licensePlate,
-          id: { not: id },
+      // Check permissions - agents can only update certain fields
+      if (userRole === Role.AGENT) {
+        const allowedFields = ['location', 'description', 'mileage', 'status'];
+        const updateFields = Object.keys(updateVehicleDto);
+        const unauthorizedFields = updateFields.filter(field => !allowedFields.includes(field));
+        
+        if (unauthorizedFields.length > 0) {
+          throw new ForbiddenException(`Agents cannot update these fields: ${unauthorizedFields.join(', ')}`);
+        }
+      }
+
+      // Check for license plate conflicts
+      if (updateVehicleDto.licensePlate) {
+        const existing = await this.prisma.vehicle.findUnique({
+          where: { licensePlate: updateVehicleDto.licensePlate },
+        });
+        if (existing && existing.id !== id) {
+          throw new ConflictException('Vehicle with this license plate already exists');
+        }
+      }
+
+      // Handle new images upload
+      let currentImages = vehicle.images as any[] || [];
+      if (images && images.length > 0) {
+        const uploadPromises = images.map(async (image) => {
+          const result = await this.uploadService.uploadImage(image, 'vehicles');
+          return {
+            url: result.secure_url,
+            publicId: result.public_id,
+            alt: `${updateVehicleDto.make || vehicle.make} ${updateVehicleDto.model || vehicle.model}`
+          };
+        });
+        
+        const newImageObjects = await Promise.all(uploadPromises);
+        currentImages = [...currentImages, ...newImageObjects];
+      }
+
+      const updatedVehicle = await this.prisma.vehicle.update({
+        where: { id },
+        data: {
+          ...updateVehicleDto,
+          features: updateVehicleDto.features
+            ? Array.isArray(updateVehicleDto.features)
+              ? updateVehicleDto.features
+              : [updateVehicleDto.features]
+            : vehicle.features,
+          images: currentImages,
+          primaryImage: currentImages.length > 0 ? currentImages[0].url : null,
+          primaryImagePublicId: currentImages.length > 0 ? currentImages[0].publicId : null,
         },
       });
 
-      if (existingVehicle) {
-        throw new ConflictException('License plate already in use');
-      }
+      const formattedVehicle = this.formatVehicleResponse(updatedVehicle);
+      return ApiResponse.success(formattedVehicle, 'Vehicle updated successfully');
+    } catch (error) {
+      throw error;
     }
-
-    // Upload new images if provided
-    let imageUrls = vehicle.images;
-    if (images && images.length > 0) {
-      const newImageUrls = await this.uploadVehicleImages(images);
-      imageUrls = [...imageUrls, ...newImageUrls];
-    }
-
-    const updatedVehicle = await this.prisma.vehicle.update({
-      where: { id },
-      data: {
-        ...updateVehicleDto,
-        images: imageUrls,
-      },
-    });
-
-    return this.formatVehicleResponse(updatedVehicle);
   }
 
-  async remove(id: string): Promise<void> {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id },
-      include: {
-        bookings: {
-          where: {
-            status: { in: ['PENDING', 'CONFIRMED', 'ACTIVE'] },
+  async remove(id: string): Promise<ApiResponse<null>> {
+    try {
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { id },
+        include: {
+          bookings: {
+            where: {
+              status: { in: ['PENDING', 'CONFIRMED', 'ACTIVE'] },
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
+
+      if (vehicle.bookings.length > 0) {
+        throw new BadRequestException(
+          'Cannot delete vehicle with active bookings',
+        );
+      }
+
+      await this.prisma.vehicle.delete({ where: { id } });
+      return ApiResponse.success(null, 'Vehicle deleted successfully');
+    } catch (error) {
+      throw error;
     }
-
-    if (vehicle.bookings.length > 0) {
-      throw new BadRequestException(
-        'Cannot delete vehicle with active bookings',
-      );
-    }
-
-    await this.prisma.vehicle.delete({ where: { id } });
   }
 
   async updateAvailability(
     id: string,
     availabilityDto: AvailabilityUpdateDto,
-  ): Promise<{ message: string }> {
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
+  ): Promise<ApiResponse<{ message: string }>> {
+    try {
+      const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
 
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
+
+      await this.prisma.vehicle.update({
+        where: { id },
+        data: { status: availabilityDto.status },
+      });
+
+      return ApiResponse.success(
+        { message: 'Vehicle availability updated successfully' },
+        'Vehicle availability updated successfully'
+      );
+    } catch (error) {
+      throw error;
     }
-
-    await this.prisma.vehicle.update({
-      where: { id },
-      data: { status: availabilityDto.status },
-    });
-
-    return { message: 'Vehicle availability updated successfully' };
   }
 
   async getAvailabilityCalendar(
     vehicleId: string,
     year: number,
     month: number,
-  ) {
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
+  ): Promise<ApiResponse<any>> {
+    try {
+      const startDate = new Date(year, month - 1, 1);
+      const endDate = new Date(year, month, 0);
 
-    const bookings = await this.prisma.booking.findMany({
-      where: {
-        vehicleId,
-        status: { in: ['CONFIRMED', 'ACTIVE'] },
-        OR: [
-          {
-            AND: [
-              { startDate: { lte: endDate } },
-              { endDate: { gte: startDate } },
-            ],
-          },
-        ],
-      },
-      select: {
-        startDate: true,
-        endDate: true,
-        status: true,
-      },
-    });
+      const bookings = await this.prisma.booking.findMany({
+        where: {
+          vehicleId,
+          status: { in: ['CONFIRMED', 'ACTIVE'] },
+          OR: [
+            {
+              AND: [
+                { startDate: { lte: endDate } },
+                { endDate: { gte: startDate } },
+              ],
+            },
+          ],
+        },
+        select: {
+          startDate: true,
+          endDate: true,
+          status: true,
+        },
+      });
 
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-      select: { status: true },
-    });
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+        select: { status: true },
+      });
 
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
+
+      const calendarData = {
+        vehicleStatus: vehicle.status,
+        bookings: bookings.map((booking) => ({
+          startDate: booking.startDate,
+          endDate: booking.endDate,
+          status: booking.status,
+        })),
+        year,
+        month,
+      };
+
+      return ApiResponse.success(calendarData, 'Availability calendar retrieved successfully');
+    } catch (error) {
+      throw error;
     }
-
-    return {
-      vehicleStatus: vehicle.status,
-      bookings: bookings.map((booking) => ({
-        startDate: booking.startDate,
-        endDate: booking.endDate,
-        status: booking.status,
-      })),
-      year,
-      month,
-    };
   }
 
-  async removeImage(vehicleId: string, imageUrl: string): Promise<void> {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id: vehicleId },
-    });
-
-    if (!vehicle) {
-      throw new NotFoundException('Vehicle not found');
-    }
-
-    const updatedImages = vehicle.images.filter((img) => img !== imageUrl);
-
-    await this.prisma.vehicle.update({
-      where: { id: vehicleId },
-      data: { images: updatedImages },
-    });
-
-    // Delete from Cloudinary
+  async removeImage(vehicleId: string, imageUrl: string): Promise<ApiResponse<null>> {
     try {
-      await this.uploadService.deleteImage(imageUrl);
+      const vehicle = await this.prisma.vehicle.findUnique({
+        where: { id: vehicleId },
+      });
+
+      if (!vehicle) {
+        throw new NotFoundException('Vehicle not found');
+      }
+
+      const currentImages = vehicle.images as any[] || [];
+      const imageToRemove = currentImages.find((img: any) => img.url === imageUrl);
+      
+      if (!imageToRemove) {
+        throw new NotFoundException('Image not found');
+      }
+
+      const updatedImages = currentImages.filter((img: any) => img.url !== imageUrl);
+
+      await this.prisma.vehicle.update({
+        where: { id: vehicleId },
+        data: { 
+          images: updatedImages,
+          primaryImage: updatedImages.length > 0 ? updatedImages[0].url : null,
+          primaryImagePublicId: updatedImages.length > 0 ? updatedImages[0].publicId : null,
+        },
+      });
+
+      // Delete from Cloudinary
+      try {
+        await this.uploadService.deleteImage(imageToRemove.publicId);
+      } catch (error) {
+        console.error('Failed to delete image from Cloudinary:', error);
+      }
+
+      return ApiResponse.success(null, 'Image removed successfully');
     } catch (error) {
-      console.error('Failed to delete image from Cloudinary:', error);
+      throw error;
     }
   }
 
   async bulkImport(
     file: Express.Multer.File,
     bulkImportDto: BulkImportDto,
-  ): Promise<{ success: number; failed: number; errors: string[] }> {
-    const results = { success: 0, failed: 0, errors: [] };
-    const csvData = [];
+  ): Promise<ApiResponse<{ success: number; failed: number; errors: string[] }>> {
+    try {
+      const results = { success: 0, failed: 0, errors: [] };
+      const csvData = [];
 
-    // Parse CSV
-    const stream = Readable.from(file.buffer.toString());
+      // Parse CSV
+      const stream = Readable.from(file.buffer.toString());
 
-    return new Promise((resolve) => {
-      stream
-        .pipe(csv())
-        .on('data', (data) => csvData.push(data))
-        .on('end', async () => {
-          for (const row of csvData) {
-            try {
-              await this.createVehicleFromCsvRow(row, bulkImportDto);
-              results.success++;
-            } catch (error) {
-              results.failed++;
-              results.errors.push(
-                `Row ${results.success + results.failed}: ${error.message}`,
-              );
+      const importResults = await new Promise<{ success: number; failed: number; errors: string[] }>((resolve) => {
+        stream
+          .pipe(csv())
+          .on('data', (data) => csvData.push(data))
+          .on('end', async () => {
+            for (const row of csvData) {
+              try {
+                await this.createVehicleFromCsvRow(row, bulkImportDto);
+                results.success++;
+              } catch (error) {
+                results.failed++;
+                results.errors.push(
+                  `Row ${results.success + results.failed}: ${error.message}`,
+                );
+              }
             }
-          }
-          resolve(results);
-        });
-    });
+            resolve(results);
+          });
+      });
+
+      return ApiResponse.success(importResults, 'Bulk import completed successfully');
+    } catch (error) {
+      throw error;
+    }
   }
 
-  async exportVehicles(format: 'csv' | 'json' = 'csv') {
-    const vehicles = await this.prisma.vehicle.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  async exportVehicles(format: 'csv' | 'json' = 'csv'): Promise<ApiResponse<any>> {
+    try {
+      const vehicles = await this.prisma.vehicle.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
 
-    if (format === 'json') {
-      return vehicles;
+      if (format === 'json') {
+        return ApiResponse.success(vehicles, 'Vehicles exported successfully');
+      }
+
+      // Convert to CSV format
+      const csvHeader = [
+        'id',
+        'make',
+        'model',
+        'year',
+        'category',
+        'transmission',
+        'fuelType',
+        'seats',
+        'doors',
+        'color',
+        'licensePlate',
+        'vin',
+        'pricePerDay',
+        'pricePerHour',
+        'location',
+        'status',
+        'mileage',
+        'description',
+      ].join(',');
+
+      const csvRows = vehicles.map((vehicle) =>
+        [
+          vehicle.id,
+          vehicle.make,
+          vehicle.model,
+          vehicle.year,
+          vehicle.category,
+          vehicle.transmission,
+          vehicle.fuelType,
+          vehicle.seats,
+          vehicle.doors,
+          vehicle.color,
+          vehicle.licensePlate,
+          vehicle.vin || '',
+          vehicle.pricePerDay,
+          vehicle.pricePerHour || '',
+          vehicle.location,
+          vehicle.status,
+          vehicle.mileage,
+          vehicle.description || '',
+        ].join(','),
+      );
+
+      const csvData = [csvHeader, ...csvRows].join('\n');
+      return ApiResponse.success(csvData, 'Vehicles exported as CSV successfully');
+    } catch (error) {
+      throw error;
     }
-
-    // Convert to CSV format
-    const csvHeader = [
-      'id',
-      'make',
-      'model',
-      'year',
-      'category',
-      'transmission',
-      'fuelType',
-      'seats',
-      'doors',
-      'color',
-      'licensePlate',
-      'vin',
-      'pricePerDay',
-      'pricePerHour',
-      'location',
-      'status',
-      'mileage',
-      'description',
-    ].join(',');
-
-    const csvRows = vehicles.map((vehicle) =>
-      [
-        vehicle.id,
-        vehicle.make,
-        vehicle.model,
-        vehicle.year,
-        vehicle.category,
-        vehicle.transmission,
-        vehicle.fuelType,
-        vehicle.seats,
-        vehicle.doors,
-        vehicle.color,
-        vehicle.licensePlate,
-        vehicle.vin || '',
-        vehicle.pricePerDay,
-        vehicle.pricePerHour || '',
-        vehicle.location,
-        vehicle.status,
-        vehicle.mileage,
-        vehicle.description || '',
-      ].join(','),
-    );
-
-    return [csvHeader, ...csvRows].join('\n');
   }
 
   private async createVehicleFromCsvRow(

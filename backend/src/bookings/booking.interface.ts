@@ -4,6 +4,7 @@ import {
   Role,
   Prisma,
 } from '@prisma/client';
+import { ApiResponse, PaginatedResponse } from '../common/dto/api-response.dto';
 import {
   CreateBookingDto,
   UpdateBookingDto,
@@ -29,7 +30,7 @@ export type UpdateBookingData = Omit<
   'user' | 'vehicle' | 'payment' | 'coupon'
 >;
 
-// Use Prisma's payload types for relations
+// Enhanced booking response with relations
 export type BookingWithDetails = Prisma.BookingGetPayload<{
   include: {
     user: {
@@ -42,6 +43,8 @@ export type BookingWithDetails = Prisma.BookingGetPayload<{
         address: true;
         city: true;
         country: true;
+        avatar: true;
+        licenseNumber: true;
       };
     };
     vehicle: {
@@ -54,24 +57,38 @@ export type BookingWithDetails = Prisma.BookingGetPayload<{
         images: true;
         category: true;
         location: true;
+        pricePerDay: true;
+        pricePerHour: true;
+        features: true;
+        status: true;
       };
     };
     payment: true;
-    coupon: true;
+    coupon: {
+      select: {
+        id: true;
+        code: true;
+        discountValue: true;
+        discountType: true;
+        description: true;
+      };
+    };
   };
 }>;
 
-// Use a single response type that extends PrismaBooking
-export interface BookingResponse extends PrismaBooking {
+// Enhanced booking response interface
+export interface BookingResponseData extends PrismaBooking {
   user?: {
     id: string;
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
+    phone?: string;
     address?: string;
     city?: string;
     country?: string;
+    avatar?: string;
+    licenseNumber?: string;
   };
   vehicle?: {
     id: string;
@@ -79,22 +96,33 @@ export interface BookingResponse extends PrismaBooking {
     model: string;
     year: number;
     licensePlate: string;
-    images?: string[];
+    images?: any[];
     category?: string;
     location?: string;
+    pricePerDay?: number;
+    pricePerHour?: number;
+    features?: string[];
+    status?: string;
   };
   payment?: any;
   coupon?: {
+    id: string;
     code: string;
     discountValue: number;
     discountType: string;
+    description?: string;
   };
-  isModifiable: boolean;
-  isCancellable: boolean;
+  isModifiable?: boolean;
+  isCancellable?: boolean;
+  canRate?: boolean;
+  estimatedTotal?: number;
 }
 
-// Remove BookingResponseDto and use BookingResponse everywhere
-export type BookingResponseDto = BookingResponse;
+// API Response types using the wrapper
+export type BookingApiResponse = ApiResponse<BookingResponseData>;
+export type BookingsListApiResponse = ApiResponse<PaginatedResponse<BookingResponseData>>;
+export type BookingAvailabilityApiResponse = ApiResponse<IBookingAvailabilityResult>;
+export type BookingPricingApiResponse = ApiResponse<PricingBreakdownDto>;
 
 /**
  * Booking Search Options Interface
@@ -108,7 +136,14 @@ export interface IBookingSearchOptions {
   startDate?: string;
   endDate?: string;
   userRole?: Role;
-  isPublic?: boolean; // NEW: Flag to indicate public access
+  isPublic?: boolean;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  dateRange?: 'today' | 'week' | 'month' | 'year';
+  location?: string;
+  minAmount?: number;
+  maxAmount?: number;
 }
 
 /**
@@ -116,12 +151,24 @@ export interface IBookingSearchOptions {
  */
 export interface IBookingAvailabilityResult {
   available: boolean;
+  vehicleId: string;
+  requestedPeriod: {
+    startDate: string;
+    endDate: string;
+  };
   conflicts?: Array<{
     id: string;
     startDate: Date;
     endDate: Date;
     status: BookingStatus;
+    bookingReference?: string;
   }>;
+  suggestedAlternatives?: Array<{
+    startDate: Date;
+    endDate: Date;
+    available: boolean;
+  }>;
+  nextAvailableDate?: Date;
 }
 
 /**
@@ -129,19 +176,25 @@ export interface IBookingAvailabilityResult {
  */
 export interface ICouponValidationResult {
   id: string;
+  code: string;
   discountAmount: number;
+  discountType: string;
+  isValid: boolean;
+  validationMessage?: string;
 }
 
 /**
  * Booking Search Result Interface
  */
 export interface IBookingSearchResult {
-  data: BookingResponse[];
+  data: BookingResponseData[];
   meta: {
     total: number;
     page: number;
     limit: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
   };
 }
 
@@ -152,35 +205,35 @@ export interface IBookingOperations {
   create(
     createBookingDto: CreateBookingDto,
     userId: string,
-  ): Promise<BookingResponse>;
+  ): Promise<BookingApiResponse>;
 
-  findAll(options: IBookingSearchOptions): Promise<IBookingSearchResult>;
+  findAll(options: IBookingSearchOptions): Promise<BookingsListApiResponse>;
 
   findOne(
     id: string,
     userId?: string,
     userRole?: Role,
-  ): Promise<BookingResponse>;
+  ): Promise<BookingApiResponse>;
 
   update(
     id: string,
     updateBookingDto: UpdateBookingDto,
     userId: string,
     userRole: Role,
-  ): Promise<BookingResponse>;
+  ): Promise<BookingApiResponse>;
 
   updateStatus(
     id: string,
     statusUpdateDto: BookingStatusUpdateDto,
     userRole: Role,
-  ): Promise<BookingResponse>;
+  ): Promise<BookingApiResponse>;
 
   cancel(
     id: string,
     cancelBookingDto: CancelBookingDto,
     userId: string,
     userRole: Role,
-  ): Promise<BookingResponse>;
+  ): Promise<BookingApiResponse>;
 }
 
 /**
@@ -191,7 +244,7 @@ export interface IBookingAvailability {
     vehicleId: string,
     startDate: string,
     endDate: string,
-  ): Promise<IBookingAvailabilityResult>;
+  ): Promise<BookingAvailabilityApiResponse>;
 }
 
 /**
@@ -206,17 +259,69 @@ export interface IBookingPricing {
     endTime?: string,
     isHourlyBooking?: boolean,
     couponCode?: string,
-  ): Promise<PricingBreakdownDto>;
+  ): Promise<BookingPricingApiResponse>;
 }
 
 /**
- * Complete Booking Service Interface - Only expose public methods
+ * Complete Booking Service Interface
  */
 export interface IBookingService
   extends IBookingOperations,
     IBookingAvailability,
     IBookingPricing {
-  // Add any additional public methods specific to the service
+  // Statistics and analytics
+  getBookingStatistics(
+    userId?: string,
+    userRole?: Role,
+  ): Promise<ApiResponse<IBookingStatistics>>;
+  
+  // Bulk operations
+  bulkUpdateStatus(
+    bookingIds: string[],
+    status: BookingStatus,
+    userRole: Role,
+  ): Promise<ApiResponse<IBulkUpdateResult>>;
+}
+
+/**
+ * Additional interfaces for enhanced functionality
+ */
+export interface IBookingStatistics {
+  totalBookings: number;
+  activeBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  totalRevenue: number;
+  averageBookingValue: number;
+  bookingsByStatus: Record<BookingStatus, number>;
+  bookingsByMonth: Array<{
+    month: string;
+    count: number;
+    revenue: number;
+  }>;
+  topVehicles: Array<{
+    vehicleId: string;
+    make: string;
+    model: string;
+    bookingCount: number;
+    revenue: number;
+  }>;
+  customerMetrics: {
+    newCustomers: number;
+    repeatCustomers: number;
+    customerRetentionRate: number;
+  };
+}
+
+export interface IBulkUpdateResult {
+  successful: string[];
+  failed: Array<{
+    bookingId: string;
+    error: string;
+  }>;
+  total: number;
+  successCount: number;
+  failureCount: number;
 }
 
 /**
@@ -238,6 +343,11 @@ export interface IBookingConfig {
   };
   readonly taxRate: number;
   readonly serviceFeeRate: number;
+  readonly insuranceRates: {
+    basic: number;
+    comprehensive: number;
+    premium: number;
+  };
 }
 
 /**
@@ -273,5 +383,20 @@ export const BOOKING_ERRORS = {
     code: 'VEHICLE_CONFLICT',
     message: 'Vehicle is not available for the selected dates',
     statusCode: 409,
+  },
+  INSUFFICIENT_PERMISSIONS: {
+    code: 'INSUFFICIENT_PERMISSIONS',
+    message: 'Insufficient permissions for this operation',
+    statusCode: 403,
+  },
+  INVALID_COUPON: {
+    code: 'INVALID_COUPON',
+    message: 'Invalid or expired coupon code',
+    statusCode: 400,
+  },
+  PAYMENT_REQUIRED: {
+    code: 'PAYMENT_REQUIRED',
+    message: 'Payment is required to complete the booking',
+    statusCode: 402,
   },
 } as const;

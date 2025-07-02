@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { VehicleService, Vehicle } from '../vehicle';
+import { VehicleService, Vehicle } from '../vehicle.service';
 
 @Component({
   selector: 'app-vehicle-detail',
@@ -43,6 +43,7 @@ export class VehicleDetail implements OnInit {
         this.isLoading.set(false);
       },
       error: (err) => {
+        console.error('Error loading vehicle:', err);
         this.error.set('Failed to load vehicle details');
         this.isLoading.set(false);
       }
@@ -51,6 +52,18 @@ export class VehicleDetail implements OnInit {
 
   selectImage(index: number) {
     this.selectedImageIndex.set(index);
+  }
+
+  getImageUrl(images: any[], index: number = 0): string {
+    if (images && images.length > index) {
+      // Handle both string arrays and object arrays
+      if (typeof images[index] === 'string') {
+        return images[index];
+      } else if (images[index].url) {
+        return images[index].url;
+      }
+    }
+    return '/assets/placeholder-car.jpg';
   }
 
   bookVehicle() {
