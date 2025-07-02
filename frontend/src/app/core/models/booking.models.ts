@@ -37,6 +37,7 @@ export interface BookingResponse {
 
 export interface CreateBookingDto {
   vehicleId: string;
+  // some
   startDate: string;
   endDate: string;
   startTime?: string;
